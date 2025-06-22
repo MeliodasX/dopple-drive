@@ -25,5 +25,6 @@ export const upload = pgTable('upload', {
   fileUrl: text('file_url').notNull(),
   size: bigint('size', { mode: 'number' }),
   key: text('key').notNull(),
+  mimeType: text('mime_type'),
   ...timestamps
 })

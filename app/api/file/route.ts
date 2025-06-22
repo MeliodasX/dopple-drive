@@ -41,6 +41,7 @@ export async function POST(req: Request) {
   // Defaults to overriding a file unless copy is explicitly stated
   const mode = (formData.get('mode') ?? UploadMode.OVERRIDE) as UploadMode
   const fileName = file.name
+  const mimeType = file.type
 
   let data: InferSelectModel<typeof upload>[] = []
 
@@ -69,6 +70,7 @@ export async function POST(req: Request) {
       .values({
         fileName: modifiedFileName,
         size,
+        mimeType,
         key,
         userId,
         fileUrl: url
@@ -89,6 +91,7 @@ export async function POST(req: Request) {
       data = await db
         .update(upload)
         .set({
+          mimeType,
           size,
           updatedAt: new Date()
         })
@@ -97,7 +100,7 @@ export async function POST(req: Request) {
     } else {
       data = await db
         .insert(upload)
-        .values({ userId, fileName, fileUrl: url, size, key })
+        .values({ userId, fileName, fileUrl: url, size, key, mimeType })
         .returning()
     }
   }
