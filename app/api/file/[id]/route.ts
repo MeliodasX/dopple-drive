@@ -6,7 +6,7 @@ import { ErrorCodes } from '@/types/errors'
 import { db } from '@/db'
 import { upload } from '@/db/schema'
 import { and, eq, isNull } from 'drizzle-orm'
-import { deleteFileFromS3 } from '@/services/AWS/S3'
+import { deleteFileFromS3, getPreSignedURL } from '@/services/AWS/S3'
 
 export async function GET(
   req: Request,
@@ -25,12 +25,19 @@ export async function GET(
       error(ErrorCodes.FORBIDDEN, "Couldn't find resource id")
     )
 
-  const data = await db
+  const [data] = await db
     .select()
     .from(upload)
     .where(and(eq(upload.id, id), isNull(upload.deletedAt)))
 
-  return NextResponse.json(success(data))
+  const signedUrl = await getPreSignedURL(data.fileUrl)
+
+  return NextResponse.json(
+    success({
+      ...data,
+      signedUrl
+    })
+  )
 }
 
 export async function PUT(

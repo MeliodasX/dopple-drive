@@ -1,6 +1,11 @@
-import { DeleteObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  S3Client
+} from '@aws-sdk/client-s3'
 import { Upload } from '@aws-sdk/lib-storage'
 import { Readable } from 'node:stream'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 const accessKey = process.env.AWS_ACCESS_KEY_ID!
 const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY!
@@ -94,4 +99,17 @@ export const deleteFileFromS3 = async (key: string) => {
     console.error('Error deleting from S3:', error)
     throw new Error('Failed deleting from S3')
   }
+}
+
+export const getPreSignedURL = async (key: string) => {
+  const command = new GetObjectCommand({
+    Bucket: bucket,
+    Key: key
+  })
+
+  const presignedUrl = await getSignedUrl(s3Client, command, {
+    expiresIn: 3600
+  })
+
+  return presignedUrl
 }
