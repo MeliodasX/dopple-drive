@@ -8,14 +8,22 @@
     "start": "next start",
     "lint": "next lint",
     "format": "prettier --check --ignore-path .gitignore .",
-    "format:fix": "prettier --write --ignore-path .gitignore ."
+    "format:fix": "prettier --write --ignore-path .gitignore .",
+    "migrate:generate": "drizzle-kit generate --config=./drizzle.config.ts",
+    "migrate:generate:custom": "drizzle-kit generate --config=./drizzle.config.ts --custom",
+    "migrate": "drizzle-kit migrate --config=./drizzle.config.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.22.0",
     "babel-plugin-react-compiler": "^19.1.0-rc.2",
+    "dotenv": "^16.5.0",
+    "drizzle-kit": "^0.31.1",
+    "drizzle-orm": "^0.44.2",
     "next": "15.3.4",
+    "postgres": "^3.4.7",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "svix": "^1.67.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -31,5 +39,6 @@
     "prettier-plugin-tailwindcss": "^0.6.13",
     "tailwindcss": "^4",
     "typescript": "^5"
-  }
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }
