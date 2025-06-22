@@ -13,8 +13,13 @@ const handleUserCreation = async (data: UserJSON) => {
 
   // NOTE@(MeliodasX): There should be an alarm of some kind to notify if a non-conforming event is received (username and email are enforced in Clerk settings)
   if (!email || !username) {
-    console.error(`User created event for ${clerkUserId} has no primary email address or username.`)
-    return new Response('Warning: User created without primary email or username', { status: 200 })
+    console.error(
+      `User created event for ${clerkUserId} has no primary email address or username.`
+    )
+    return new Response(
+      'Warning: User created without primary email or username',
+      { status: 200 }
+    )
   }
 
   await db.insert(users).values({
@@ -30,11 +35,25 @@ const handleUserUpdate = async (data: UserJSON) => {
 
   // NOTE@(MeliodasX): There should be an alarm of some kind to notify if a non-conforming event is received (username and email are enforced in Clerk settings)
   if (!updatedEmail || !username) {
-    console.error(`User updated event for ${clerkUserId} has no primary email address or username.`)
-    return new Response('Warning: User updated without primary email or username', { status: 200 })
+    console.error(
+      `User updated event for ${clerkUserId} has no primary email address or username.`
+    )
+    return new Response(
+      'Warning: User updated without primary email or username',
+      { status: 200 }
+    )
   }
 
-  await db.update(users)
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.clerkId, clerkUserId))
+
+  if (user.clerkId)
+    return new Response('Account already exists', { status: 200 })
+
+  await db
+    .update(users)
     .set({
       email: updatedEmail,
       username,
@@ -49,10 +68,14 @@ const handleUserDelete = async (data: DeletedObjectJSON) => {
   // NOTE@(MeliodasX): There should be an alarm of some kind to notify if a non-conforming event is received
   if (!clerkUserId) {
     console.error(`User deleted event received with no clerkId for user.`)
-    return new Response('Warning: User deleted without sending clerkId for user', { status: 200 })
+    return new Response(
+      'Warning: User deleted without sending clerkId for user',
+      { status: 200 }
+    )
   }
 
-  await db.update(users)
+  await db
+    .update(users)
     .set({
       deletedAt: new Date()
     })
@@ -114,7 +137,9 @@ export async function POST(req: Request) {
     }
   } catch (error) {
     console.error('Database operation failed for webhook event:', error)
-    return new Response('Internal Server Error processing webhook', { status: 500 })
+    return new Response('Internal Server Error processing webhook', {
+      status: 500
+    })
   }
 
   return new Response('Webhook received', { status: 200 })

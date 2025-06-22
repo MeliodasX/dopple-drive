@@ -1,4 +1,11 @@
-import { pgTable, serial, text, varchar } from 'drizzle-orm/pg-core'
+import {
+  bigint,
+  integer,
+  pgTable,
+  serial,
+  text,
+  varchar
+} from 'drizzle-orm/pg-core'
 import { timestamps } from '@/db/helpers/timestamps'
 
 export const users = pgTable('users', {
@@ -6,5 +13,16 @@ export const users = pgTable('users', {
   clerkId: text('clerk_id').unique().notNull(),
   username: text('user_name').unique().notNull(),
   email: varchar('email', { length: 255 }).notNull().unique(),
+  ...timestamps
+})
+
+export const upload = pgTable('upload', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id')
+    .references(() => users.id)
+    .notNull(),
+  fileName: text('file_name').notNull(),
+  fileUrl: text('file_url').notNull(),
+  size: bigint('size', { mode: 'number' }),
   ...timestamps
 })

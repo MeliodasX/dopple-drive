@@ -15,6 +15,13 @@
       "when": 1750592275306,
       "tag": "0001_great_donald_blake",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1750610738595,
+      "tag": "0002_striped_white_queen",
+      "breakpoints": true
     }
   ]
 }
