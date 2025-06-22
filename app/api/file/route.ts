@@ -38,25 +38,11 @@ export async function POST(req: Request) {
     return NextResponse.json(error(ErrorCodes.BAD_REQUEST, 'File not found.'))
   }
 
-  // Defaults to making a copy
-  const mode = (formData.get('mode') ?? UploadMode.STANDARD) as UploadMode
+  // Defaults to overriding a file unless copy is explicitly stated
+  const mode = (formData.get('mode') ?? UploadMode.OVERRIDE) as UploadMode
   const fileName = file.name
 
-  const { url, size } = await uploadFileToS3(file)
-
   let data: InferSelectModel<typeof upload>[] = []
-
-  if (mode === UploadMode.STANDARD) {
-    data = await db
-      .insert(upload)
-      .values({
-        fileName,
-        size,
-        userId,
-        fileUrl: url
-      })
-      .returning()
-  }
 
   if (mode === UploadMode.COPY) {
     const result = await db
@@ -67,12 +53,23 @@ export async function POST(req: Request) {
       .where(ilike(upload.fileName, `%${fileName}%`))
     const rowCount = Number(result[0].count)
 
-    const modifiedFileName = `${fileName} (${rowCount})`
+    const name = fileName.split('.')
+    name[0] = `${name[0]}_(${rowCount})`
+    const modifiedFileName = name.join('.')
+    const key = `${userId}/${modifiedFileName}`
+
+    const { url, size } = await uploadFileToS3(
+      file,
+      `${userId}`,
+      modifiedFileName
+    )
+
     data = await db
       .insert(upload)
       .values({
         fileName: modifiedFileName,
         size,
+        key,
         userId,
         fileUrl: url
       })
@@ -80,17 +77,18 @@ export async function POST(req: Request) {
   }
 
   if (mode === UploadMode.OVERRIDE) {
-    const result = await db
+    const [result] = await db
       .select()
       .from(upload)
       .where(eq(upload.fileName, fileName))
+
+    const key = `${userId}/${fileName}`
+    const { url, size } = await uploadFileToS3(file, `${userId}`)
 
     if (result) {
       data = await db
         .update(upload)
         .set({
-          fileName,
-          fileUrl: url,
           size,
           updatedAt: new Date()
         })
@@ -99,7 +97,7 @@ export async function POST(req: Request) {
     } else {
       data = await db
         .insert(upload)
-        .values({ userId, fileName, fileUrl: url, size })
+        .values({ userId, fileName, fileUrl: url, size, key })
         .returning()
     }
   }

@@ -6,6 +6,7 @@ import { ErrorCodes } from '@/types/errors'
 import { db } from '@/db'
 import { upload } from '@/db/schema'
 import { and, eq, isNull } from 'drizzle-orm'
+import { deleteFileFromS3 } from '@/services/AWS/S3'
 
 export async function GET(
   req: Request,
@@ -88,14 +89,21 @@ export async function DELETE(
       error(ErrorCodes.FORBIDDEN, "Couldn't find resource id")
     )
 
-  const body = await req.json()
-
-  const data = await db
+  const [data] = await db
     .update(upload)
     .set({
       deletedAt: new Date()
     })
     .where(eq(upload.id, id))
+    .returning({
+      key: upload.key
+    })
+
+  try {
+    await deleteFileFromS3(data.key)
+  } catch (e) {
+    //NOTE(@MeliodasX): Can log this into a dump table that can perform the deletion later via a scheduled job.
+  }
 
   return NextResponse.json(
     success({

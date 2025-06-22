@@ -1,4 +1,4 @@
-import { S3Client } from '@aws-sdk/client-s3'
+import { DeleteObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { Upload } from '@aws-sdk/lib-storage'
 import { Readable } from 'node:stream'
 
@@ -43,17 +43,22 @@ if (process.env.NODE_ENV === 'development') {
   })
 }
 
-export const uploadFileToS3 = async (file: File, key?: string) => {
+export const uploadFileToS3 = async (
+  file: File,
+  key?: string,
+  modifiedFileName?: string
+) => {
   const arrayBuffer = await file.arrayBuffer()
   const fileBuffer = Buffer.from(arrayBuffer)
-  const fileName = file.name
+  const fileName = modifiedFileName ? modifiedFileName : file.name
   const size = fileBuffer.byteLength
+  const objectKey = key ? `${key}/${fileName}` : `${fileName}`
 
   const upload = new Upload({
     client: s3Client,
     params: {
       Bucket: bucket,
-      Key: key ? `${key}/${fileName}` : `${fileName}`,
+      Key: objectKey,
       Body: Readable.from(fileBuffer),
       ContentType: file.type,
       ACL: 'private',
@@ -74,5 +79,19 @@ export const uploadFileToS3 = async (file: File, key?: string) => {
   return {
     url: s3Url,
     size
+  }
+}
+
+export const deleteFileFromS3 = async (key: string) => {
+  try {
+    await s3Client.send(
+      new DeleteObjectCommand({
+        Bucket: bucket,
+        Key: key
+      })
+    )
+  } catch (error) {
+    console.error('Error deleting from S3:', error)
+    throw new Error('Failed deleting from S3')
   }
 }
