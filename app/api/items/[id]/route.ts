@@ -10,7 +10,7 @@ import {
 import { ErrorCodes, SuccessCodes } from '@/types/errors'
 import { db } from '@/db'
 import { items } from '@/db/schema'
-import { and, eq, isNull, like } from 'drizzle-orm'
+import { and, eq, isNull, like, not, sql } from 'drizzle-orm'
 import { deleteFileFromS3, getPreSignedURL } from '@/services/AWS/S3'
 import { FOLDER_MIME_TYPE } from '@/utils/constants'
 
@@ -94,43 +94,151 @@ export async function GET(
 }
 
 // TODO: Update this to conform to the new items table
-export async function PUT(
+export async function PATCH(
   req: Request,
-  { params }: { params: Promise<{ id: number }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params
+  try {
+    const { id } = await params
 
-  await checkAuthStatusOnApi()
-  const userId = await getUserIdFromClerkId()
+    await checkAuthStatusOnApi()
+    const userId = await getUserIdFromClerkId()
+    if (!userId) {
+      return errorResponse(ErrorCodes.FORBIDDEN, "Couldn't find user")
+    }
 
-  if (!userId)
-    return NextResponse.json(error(ErrorCodes.FORBIDDEN, "Couldn't find user"))
+    const itemId = parseInt(id, 10)
+    if (isNaN(itemId)) {
+      return errorResponse(ErrorCodes.BAD_REQUEST, 'Invalid item ID.')
+    }
 
-  if (!id)
-    return NextResponse.json(
-      error(ErrorCodes.FORBIDDEN, "Couldn't find resource id")
-    )
+    if (!id)
+      return NextResponse.json(
+        error(ErrorCodes.FORBIDDEN, "Couldn't find resource id")
+      )
 
-  const headers = req.headers
-  const contentType = headers.get('Content-Type') || ''
+    const headers = req.headers
+    const contentType = headers.get('Content-Type') || ''
 
-  if (!contentType || !contentType.startsWith('application/json')) {
-    return NextResponse.json(
-      error(ErrorCodes.BAD_REQUEST, 'Incorrect request type. JSON required.')
+    if (!contentType || !contentType.startsWith('application/json')) {
+      return NextResponse.json(
+        error(ErrorCodes.BAD_REQUEST, 'Incorrect request type. JSON required.')
+      )
+    }
+
+    const body = await req.json()
+    const { name, parentId } = body
+
+    if (name === undefined && parentId === undefined) {
+      return errorResponse(
+        ErrorCodes.BAD_REQUEST,
+        'Either "name" or "parentId" must be provided for an update.'
+      )
+    }
+
+    const updatedItem = await db.transaction(async (trx) => {
+      const [itemToUpdate] = await trx
+        .select()
+        .from(items)
+        .where(and(eq(items.id, itemId), eq(items.userId, userId)))
+
+      if (!itemToUpdate) {
+        throw new Error(
+          'Item not found or you do not have permission to modify it.'
+        )
+      }
+
+      let targetParentId = itemToUpdate.parentId
+
+      if (parentId !== undefined && parentId !== itemToUpdate.parentId) {
+        const newParentId = parentId === null ? null : Number(parentId)
+        let newParentPath = '/'
+
+        if (newParentId !== null) {
+          const [newParent] = await trx
+            .select({ path: items.path, mimeType: items.mimeType })
+            .from(items)
+            .where(and(eq(items.id, newParentId), eq(items.userId, userId)))
+
+          if (!newParent) throw new Error('Destination folder not found.')
+          if (newParent.mimeType !== FOLDER_MIME_TYPE)
+            throw new Error('Destination must be a folder.')
+
+          if (
+            itemToUpdate.mimeType === FOLDER_MIME_TYPE &&
+            newParent.path.startsWith(itemToUpdate.path)
+          ) {
+            throw new Error(
+              'Cannot move a folder into itself or one of its descendants.'
+            )
+          }
+          newParentPath = newParent.path
+        }
+
+        const oldPathPrefix = itemToUpdate.path
+        const newPathPrefix = `${newParentPath}${itemToUpdate.id}/`
+
+        await trx.execute(
+          sql`UPDATE ${items} SET path = REPLACE(${items.path}, ${oldPathPrefix}, ${newPathPrefix}) WHERE ${items.path} LIKE ${oldPathPrefix + '%'}`
+        )
+
+        await trx
+          .update(items)
+          .set({ parentId: newParentId })
+          .where(eq(items.id, itemToUpdate.id))
+        targetParentId = newParentId
+      }
+
+      if (typeof name === 'string' && name !== itemToUpdate.name) {
+        if (itemToUpdate.mimeType !== FOLDER_MIME_TYPE) {
+          const [conflict] = await trx
+            .select({ id: items.id })
+            .from(items)
+            .where(
+              and(
+                eq(items.userId, userId),
+                eq(items.name, name),
+                targetParentId === null
+                  ? isNull(items.parentId)
+                  : eq(items.parentId, targetParentId),
+                not(eq(items.id, itemToUpdate.id))
+              )
+            )
+            .limit(1)
+
+          if (conflict) {
+            throw new Error(
+              `A file named "${name}" already exists in this location.`
+            )
+          }
+        }
+        await trx
+          .update(items)
+          .set({ name })
+          .where(eq(items.id, itemToUpdate.id))
+      }
+
+      const [finalItem] = await trx
+        .select()
+        .from(items)
+        .where(eq(items.id, itemToUpdate.id))
+      return finalItem
+    })
+
+    return successResponse(SuccessCodes.OK, updatedItem)
+  } catch (e: any) {
+    console.error('Error updating item:', e)
+    if (e.message?.includes('already exists')) {
+      return errorResponse(ErrorCodes.CONFLICT, e.message)
+    }
+    if (e.message?.includes('not found')) {
+      return errorResponse(ErrorCodes.NOT_FOUND, e.message)
+    }
+    return errorResponse(
+      ErrorCodes.INTERNAL_SERVER_ERROR,
+      `Failed to update item: ${e.message || 'Unknown error'}`
     )
   }
-
-  const body = await req.json()
-
-  const data = await db
-    .update(items)
-    .set({
-      ...body
-    })
-    .where(eq(items.id, id))
-    .returning()
-
-  return NextResponse.json(success(data))
 }
 
 export async function DELETE(

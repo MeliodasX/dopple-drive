@@ -24,6 +24,16 @@ export const doPut = async (url: string, data: object) => {
   })
 }
 
+export const doPatch = async (url: string, data: object) => {
+  return await fetch(`${apiUrl}${url}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  })
+}
+
 export const doDelete = async (url: string) => {
   return await fetch(`${apiUrl}${url}`, {
     method: 'DELETE'

@@ -1,8 +1,8 @@
 export enum SuccessCodes {
-  OK = "OK",
-  CREATED = "CREATED",
-  ACCEPTED = "ACCEPTED",
-  NO_CONTENT = "NO_CONTENT",
+  OK = 'OK',
+  CREATED = 'CREATED',
+  ACCEPTED = 'ACCEPTED',
+  NO_CONTENT = 'NO_CONTENT'
 }
 
 export enum ErrorCodes {
@@ -11,6 +11,7 @@ export enum ErrorCodes {
   FORBIDDEN = 'FORBIDDEN', // User lacks permission
   NOT_FOUND = 'NOT_FOUND', // Resource doesn't exist
   VALIDATION_ERROR = 'VALIDATION_ERROR', // Schema validation failure
+  CONFLICT = 'CONFLICT',
   INTERNAL_SERVER_ERROR = 'INTERNAL_SERVER_ERROR'
 }
 
@@ -20,6 +21,7 @@ export const ErrorMessages = {
   [ErrorCodes.FORBIDDEN]: 'You do not have permission to perform this action',
   [ErrorCodes.NOT_FOUND]: 'The requested resource was not found',
   [ErrorCodes.VALIDATION_ERROR]: 'Request validation failed',
+  [ErrorCodes.CONFLICT]: 'Resource conflicts with another resource',
   [ErrorCodes.INTERNAL_SERVER_ERROR]:
     'Server ran into issues with your request.'
 } as const
@@ -33,6 +35,7 @@ export const HttpStatusCodes = {
   [ErrorCodes.UNAUTHORIZED]: 401,
   [ErrorCodes.FORBIDDEN]: 403,
   [ErrorCodes.NOT_FOUND]: 404,
+  [ErrorCodes.CONFLICT]: 409,
   [ErrorCodes.VALIDATION_ERROR]: 422,
   [ErrorCodes.INTERNAL_SERVER_ERROR]: 500
 } as const
