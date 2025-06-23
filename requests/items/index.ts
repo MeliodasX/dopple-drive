@@ -1,7 +1,12 @@
 import { UploadMode } from '@/types/item-types'
-import { doDelete, doGet, doPostFormData, doPut } from '@/requests'
+import { doDelete, doGet, doPost, doPostFormData, doPut } from '@/requests'
+import { FOLDER_MIME_TYPE } from '@/utils/constants'
 
-export const uploadFile = async (file: File, mode?: UploadMode) => {
+export const createFile = async (
+  file: File,
+  mode?: UploadMode,
+  parentId?: number | null
+) => {
   const formData = new FormData()
   formData.append('file', file)
 
@@ -9,7 +14,11 @@ export const uploadFile = async (file: File, mode?: UploadMode) => {
     formData.append('mode', mode)
   }
 
-  const response = await doPostFormData(`/file`, formData)
+  if (parentId) {
+    formData.append('parentId', `${parentId}`)
+  }
+
+  const response = await doPostFormData(`/items`, formData)
 
   if (!response.ok) {
     const errorData = await response.json()
@@ -19,8 +28,12 @@ export const uploadFile = async (file: File, mode?: UploadMode) => {
   return await response.json()
 }
 
-export const getFileById = async (id: number) => {
-  const response = await doGet(`/file/${id}`)
+export const createFolder = async (name: string, parentId?: number | null) => {
+  const response = await doPost('/items', {
+    name,
+    parentId,
+    mimeType: FOLDER_MIME_TYPE
+  })
 
   if (!response.ok) {
     const errorData = await response.json()
@@ -30,10 +43,22 @@ export const getFileById = async (id: number) => {
   return await response.json()
 }
 
-export const updateFileById = async (
+export const getResourceById = async (id: number) => {
+  const response = await doGet(`/items/${id}`)
+
+  if (!response.ok) {
+    const errorData = await response.json()
+    throw Error(errorData)
+  }
+
+  return await response.json()
+}
+
+export const updateResourceById = async (
   id: number,
   payload: {
-    fileName: string
+    name?: string
+    parentId?: number | null
   }
 ) => {
   const response = await doPut(`/file/${id}`, payload)
@@ -46,13 +71,10 @@ export const updateFileById = async (
   return await response.json()
 }
 
-export const deleteFileById = async (id: number) => {
-  const response = await doDelete(`/file/${id}`)
+export const deleteResourceById = async (id: number) => {
+  await doDelete(`/file/${id}`)
 
-  if (!response.ok) {
-    const errorData = await response.json()
-    throw Error(errorData)
+  return {
+    success: true
   }
-
-  return await response.json()
 }

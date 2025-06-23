@@ -106,8 +106,8 @@ const handleFileCreation = async (req: Request, userId: number) => {
     return errorResponse(ErrorCodes.BAD_REQUEST, 'File not found.')
   }
 
-  // Defaults to overriding a file unless copy is explicitly stated
-  const mode = (formData.get('mode') ?? UploadMode.OVERRIDE) as UploadMode
+  // Defaults to creating a copy of the file unless override is explicitly stated
+  const mode = (formData.get('mode') ?? UploadMode.COPY) as UploadMode
   const getParentId = formData.get('parentId')
   const parentId = getParentId ? Number(getParentId) : null
   const uniqueId = nanoid()

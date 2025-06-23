@@ -43,9 +43,6 @@ export const doDelete = async (url: string) => {
 export const doPostFormData = async (url: string, formData: FormData) => {
   return await fetch(`${apiUrl}${url}`, {
     method: 'POST',
-    body: formData,
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    }
+    body: formData
   })
 }

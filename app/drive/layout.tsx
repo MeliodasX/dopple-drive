@@ -1,7 +1,6 @@
-import { SidebarProvider } from '@/components/ui/sidebar'
 import { ReactNode } from 'react'
-import { AppSidebar } from '@/components/app-sidebar'
 import { AppHeader } from '@/components/app-header'
+import { FloatingButton } from '@/components/floating-button'
 
 export default function RootLayout({
   children
@@ -9,12 +8,10 @@ export default function RootLayout({
   children: ReactNode
 }>) {
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <main className="w-full">
-        <AppHeader />
-        {children}
-      </main>
-    </SidebarProvider>
+    <main className="min-h-screen w-full bg-slate-950 text-slate-100">
+      <AppHeader />
+      <FloatingButton />
+      {children}
+    </main>
   )
 }

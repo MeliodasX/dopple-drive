@@ -5,6 +5,7 @@ import { ClerkProvider } from '@clerk/nextjs'
 import { BasicHeader } from '@/components/basic-header'
 import { ReactNode } from 'react'
 import QueryProvider from '@/query/QueryProvider'
+import { Toaster } from '@/components/ui/sonner'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -30,7 +31,7 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en" className="dark">
         <head>
-          <script/>
+          <script />
           <title>Dopple Drive</title>
         </head>
         <body
@@ -40,6 +41,19 @@ export default function RootLayout({
             <BasicHeader />
             {children}
           </QueryProvider>
+          <Toaster
+            position="top-right"
+            expand={true}
+            richColors={false}
+            closeButton={true}
+            toastOptions={{
+              style: {
+                background: 'rgb(15 23 42 / 0.9)',
+                border: '1px solid rgb(51 65 85)',
+                color: 'rgb(248 250 252)'
+              }
+            }}
+          />
         </body>
       </html>
     </ClerkProvider>

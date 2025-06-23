@@ -1,11 +1,7 @@
-import {
-  SignedIn,
-  SignedOut,
-  SignInButton,
-  SignUpButton,
-  UserButton
-} from '@clerk/nextjs'
+import { SignedIn, UserButton } from '@clerk/nextjs'
 import { auth } from '@clerk/nextjs/server'
+import { DoppleLogo } from '@/components/dopple-logo'
+import { SearchBar } from '@/components/search-bar'
 
 export const AppHeader = async () => {
   const { userId } = await auth()
@@ -13,11 +9,9 @@ export const AppHeader = async () => {
   return (
     <>
       {userId && (
-        <header className="flex h-16 w-full items-center justify-end gap-4 p-4">
-          <SignedOut>
-            <SignInButton />
-            <SignUpButton />
-          </SignedOut>
+        <header className="flex h-16 w-full items-center justify-between gap-4 border-b border-slate-800 bg-slate-900/50 p-4 backdrop-blur-sm">
+          <DoppleLogo size={'medium'} />
+          <SearchBar />
           <SignedIn>
             <UserButton />
           </SignedIn>

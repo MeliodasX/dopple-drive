@@ -1,20 +1,6 @@
-import { FOLDER_MIME_TYPE } from '@/utils/constants'
-
 export enum UploadMode {
   OVERRIDE = 'OVERRIDE',
   COPY = 'COPY'
-}
-
-export interface CreateFolderInput {
-  name: string
-  mimeType: typeof FOLDER_MIME_TYPE
-  parentId: number | null
-}
-
-export interface CreateFileInput {
-  file: File
-  mode: UploadMode
-  parentId: number | null
 }
 
 export interface BaseItemInsertPayload {
