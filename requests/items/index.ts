@@ -1,4 +1,4 @@
-import { UploadMode } from '@/types/upload-types'
+import { UploadMode } from '@/types/item-types'
 import { doDelete, doGet, doPostFormData, doPut } from '@/requests'
 
 export const uploadFile = async (file: File, mode?: UploadMode) => {

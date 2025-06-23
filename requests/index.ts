@@ -9,7 +9,7 @@ export const doPost = async (url: string, data: object) => {
     method: 'POST',
     body: JSON.stringify(data),
     headers: {
-      contentType: 'application/json'
+      'Content-Type': 'application/json'
     }
   })
 }
@@ -19,7 +19,7 @@ export const doPut = async (url: string, data: object) => {
     method: 'PUT',
     body: JSON.stringify(data),
     headers: {
-      contentType: 'application/json'
+      'Content-Type': 'application/json'
     }
   })
 }
@@ -35,7 +35,7 @@ export const doPostFormData = async (url: string, formData: FormData) => {
     method: 'POST',
     body: formData,
     headers: {
-      contentType: 'multipart/form-data'
+      'Content-Type': 'multipart/form-data'
     }
   })
 }

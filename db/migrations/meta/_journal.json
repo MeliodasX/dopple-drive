@@ -36,6 +36,20 @@
       "when": 1750622630295,
       "tag": "0004_warm_susan_delgado",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1750678567341,
+      "tag": "0005_workable_big_bertha",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1750682743975,
+      "tag": "0006_safe_the_hood",
+      "breakpoints": true
     }
   ]
 }

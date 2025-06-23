@@ -1,3 +1,10 @@
+export enum SuccessCodes {
+  OK = "OK",
+  CREATED = "CREATED",
+  ACCEPTED = "ACCEPTED",
+  NO_CONTENT = "NO_CONTENT",
+}
+
 export enum ErrorCodes {
   BAD_REQUEST = 'BAD_REQUEST', // General invalid request
   UNAUTHORIZED = 'UNAUTHORIZED', // No token or invalid token format
@@ -18,6 +25,10 @@ export const ErrorMessages = {
 } as const
 
 export const HttpStatusCodes = {
+  [SuccessCodes.OK]: 200,
+  [SuccessCodes.CREATED]: 201,
+  [SuccessCodes.ACCEPTED]: 202,
+  [SuccessCodes.NO_CONTENT]: 204,
   [ErrorCodes.BAD_REQUEST]: 400,
   [ErrorCodes.UNAUTHORIZED]: 401,
   [ErrorCodes.FORBIDDEN]: 403,

@@ -1,0 +1,1 @@
+export const FOLDER_MIME_TYPE = "application/vnd.dopple-drive.folder"
