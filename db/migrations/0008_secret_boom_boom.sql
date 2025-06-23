@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "items_name_parent_user_file_idx" ON "items" USING btree ("user_id","parent_id","name") WHERE mime_type != 'application/vnd.dopple-drive.folder';

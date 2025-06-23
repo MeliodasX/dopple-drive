@@ -1,7 +1,7 @@
 import { checkAuthStatusOnApi } from '@/utils/check-auth-status-on-api'
 import { errorResponse, successResponse } from '@/utils/response-wrappers'
 import { ErrorCodes, SuccessCodes } from '@/types/errors'
-import { uploadFileToS3 } from '@/services/AWS/S3'
+import { deleteFileFromS3, uploadFileToS3 } from '@/services/AWS/S3'
 import {
   FileInsertPayload,
   FolderInsertPayload,
@@ -11,11 +11,14 @@ import {
 import { db } from '@/db'
 import { items, ItemsSelectType } from '@/db/schema'
 import { getUserIdFromClerkId } from '@/db/requests/get-user-id-from-clerk-id'
-import { count, eq, ilike } from 'drizzle-orm'
+import { and, asc, eq, InferSelectModel, isNull, not, sql } from 'drizzle-orm'
 import { FOLDER_MIME_TYPE } from '@/utils/constants'
+import { nanoid } from 'nanoid'
+import { generateNumberedFileName } from '@/utils/generate-numbered-file-name'
 
 const handleMaterializedPath = async (
   parentId: number | null,
+  userId: number,
   payload: ItemInsertPayload
 ) => {
   let parentPath = '/'
@@ -23,7 +26,7 @@ const handleMaterializedPath = async (
     const [parentItem] = await db
       .select()
       .from(items)
-      .where(eq(items.id, parentId))
+      .where(and(eq(items.id, parentId), eq(items.userId, userId)))
       .limit(1)
     if (!parentItem) {
       throw Error('Parent folder not found.')
@@ -82,7 +85,7 @@ const handleFolderCreation = async (req: Request, userId: number) => {
       parentId
     }
 
-    data = await handleMaterializedPath(parentId, payload)
+    data = await handleMaterializedPath(parentId, userId, payload)
   } catch (e) {
     let message = 'Unable to create specified resource'
     if (e instanceof Error) {
@@ -107,63 +110,84 @@ const handleFileCreation = async (req: Request, userId: number) => {
   const mode = (formData.get('mode') ?? UploadMode.OVERRIDE) as UploadMode
   const getParentId = formData.get('parentId')
   const parentId = getParentId ? Number(getParentId) : null
-
+  const uniqueId = nanoid()
   const fileName = file.name
   const mimeType = file.type
 
   let insert: ItemsSelectType | undefined = undefined
 
   if (mode === UploadMode.COPY) {
-    const result = await db
-      .select({
-        count: count()
-      })
-      .from(items)
-      .where(ilike(items.name, `%${fileName}%`))
-    const rowCount = Number(result[0].count)
+    const MAX_RETRIES = 100 // Safety break to prevent infinite loops
 
-    const name = fileName.split('.')
-    name[0] = `${name[0]}_(${rowCount})`
-    const modifiedFileName = name.join('.')
-    const key = `${userId}/${modifiedFileName}`
+    const key = `${userId}/${uniqueId}-${fileName}`
+    const { url, size } = await uploadFileToS3(file, key)
 
-    const { url, size } = await uploadFileToS3(
-      file,
-      `${userId}`,
-      modifiedFileName
-    )
-
-    const payload: FileInsertPayload = {
-      userId,
-      name: modifiedFileName,
-      mimeType,
-      parentId,
-      key,
-      fileUrl: url,
-      size
+    for (let i = 0; i < MAX_RETRIES; i++) {
+      const newName = generateNumberedFileName(fileName, i)
+      try {
+        const payload: FileInsertPayload = {
+          userId,
+          name: newName,
+          mimeType,
+          parentId,
+          key,
+          fileUrl: url,
+          size
+        }
+        insert = await handleMaterializedPath(parentId, userId, payload)
+        break
+      } catch (e) {
+        if (e instanceof Error && (e as any).cause?.code === '23505') {
+          console.log(`Conflict for name: ${newName}. Retrying...`)
+          insert = undefined
+        } else {
+          let message =
+            'Unable to create specified resource due to an unexpected error.'
+          if (e instanceof Error) {
+            message = e.message
+          }
+          try {
+            await deleteFileFromS3(key)
+          } catch (e) {
+            console.error('Unable to delete S3 file')
+          }
+          return errorResponse(ErrorCodes.INTERNAL_SERVER_ERROR, message)
+        }
+      }
     }
 
-    try {
-      insert = await handleMaterializedPath(parentId, payload)
-    } catch (e) {
-      let message = 'Unable to create specified resource'
-      if (e instanceof Error) {
-        message = e.message
-      }
-      return errorResponse(ErrorCodes.INTERNAL_SERVER_ERROR, message)
+    if (!insert) {
+      return errorResponse(
+        ErrorCodes.INTERNAL_SERVER_ERROR,
+        `Could not find an available name for ${fileName} after ${MAX_RETRIES} attempts.`
+      )
     }
   }
-
   if (mode === UploadMode.OVERRIDE) {
     const [result] = await db
       .select()
       .from(items)
-      .where(eq(items.name, fileName))
-
-    const key = `${userId}/${fileName}`
-    const { url, size } = await uploadFileToS3(file, `${userId}`)
+      .where(
+        and(
+          eq(items.userId, userId),
+          eq(items.name, fileName),
+          not(eq(items.mimeType, FOLDER_MIME_TYPE)),
+          parentId === null
+            ? isNull(items.parentId)
+            : eq(items.parentId, parentId)
+        )
+      )
 
     if (result) {
+      if (!result.key)
+        return errorResponse(
+          ErrorCodes.INTERNAL_SERVER_ERROR,
+          'Malformed entry encountered! Existing item is missing S3 key.'
+        )
+
+      const key = result.key
+      const { size } = await uploadFileToS3(file, key)
+
       const [data] = await db
         .update(items)
         .set({
@@ -171,11 +195,14 @@ const handleFileCreation = async (req: Request, userId: number) => {
           size,
           updatedAt: new Date()
         })
-        .where(eq(items.name, fileName))
+        .where(eq(items.id, result.id))
         .returning()
 
       return successResponse(SuccessCodes.CREATED, data)
     }
+
+    const key = `${userId}/${uniqueId}-${fileName}`
+    const { url, size } = await uploadFileToS3(file, key)
 
     const payload: FileInsertPayload = {
       userId,
@@ -188,7 +215,7 @@ const handleFileCreation = async (req: Request, userId: number) => {
     }
 
     try {
-      insert = await handleMaterializedPath(parentId, payload)
+      insert = await handleMaterializedPath(parentId, userId, payload)
     } catch (e) {
       let message = 'Unable to create specified resource'
       if (e instanceof Error) {
@@ -199,6 +226,122 @@ const handleFileCreation = async (req: Request, userId: number) => {
   }
 
   return successResponse(SuccessCodes.CREATED, insert)
+}
+
+export async function GET(
+  req: Request,
+  {
+    searchParams
+  }: {
+    searchParams: Promise<{
+      parentId: string | undefined
+      pageSize: string | undefined
+      pageToken: string | undefined
+    }>
+  }
+) {
+  await checkAuthStatusOnApi()
+  const userId = await getUserIdFromClerkId()
+
+  if (!userId) {
+    return errorResponse(ErrorCodes.FORBIDDEN, "Couldn't find user")
+  }
+
+  const {
+    parentId: parentIdParam,
+    pageSize: pageSizeParam,
+    pageToken: pageTokenParam
+  } = await searchParams
+
+  const targetParentId: number | null = parentIdParam
+    ? parseInt(parentIdParam, 10)
+    : null
+
+  // Cap page size at 200 for safety
+  const pageSize: number = pageSizeParam
+    ? Math.min(parseInt(pageSizeParam, 10), 200)
+    : 50
+
+  let pageTokenCursor: { mimeType: string; name: string; id: number } | null =
+    null
+
+  if (pageTokenParam) {
+    try {
+      pageTokenCursor = JSON.parse(pageTokenParam)
+      if (
+        pageTokenCursor &&
+        (typeof pageTokenCursor.mimeType !== 'string' ||
+          typeof pageTokenCursor.name !== 'string' ||
+          typeof pageTokenCursor.id !== 'number')
+      ) {
+        pageTokenCursor = null
+      }
+    } catch (e) {
+      console.warn('Malformed pageToken received:', pageTokenParam)
+      pageTokenCursor = null
+    }
+  }
+
+  try {
+    const baseWhereClause = and(
+      eq(items.userId, userId),
+      targetParentId === null
+        ? isNull(items.parentId)
+        : eq(items.parentId, targetParentId),
+      isNull(items.deletedAt)
+    )
+
+    const mimeTypeSortExpression = sql`CASE WHEN ${items.mimeType} = ${FOLDER_MIME_TYPE} THEN 0 ELSE 1 END`
+
+    let cursorCondition = sql`TRUE`
+    if (pageTokenCursor) {
+      const pageTokenCursorMimeTypeSortValue = sql`CASE WHEN ${pageTokenCursor.mimeType} = ${FOLDER_MIME_TYPE} THEN 0 ELSE 1 END`
+
+      cursorCondition = sql`
+        (${mimeTypeSortExpression} > ${pageTokenCursorMimeTypeSortValue})
+        OR
+        (${mimeTypeSortExpression} = ${pageTokenCursorMimeTypeSortValue} AND ${items.name} > ${pageTokenCursor.name})
+        OR
+        (${mimeTypeSortExpression} = ${pageTokenCursorMimeTypeSortValue} AND ${items.name} = ${pageTokenCursor.name} AND ${items.id} > ${pageTokenCursor.id})
+      `
+    }
+
+    const finalWhereClause = and(baseWhereClause, cursorCondition)
+
+    const fetchedItems: InferSelectModel<typeof items>[] = await db
+      .select()
+      .from(items)
+      .where(finalWhereClause)
+      .orderBy(asc(mimeTypeSortExpression), asc(items.name), asc(items.id))
+      .limit(pageSize + 1)
+
+    const hasNextPage = fetchedItems.length > pageSize
+    const itemsToReturn = hasNextPage
+      ? fetchedItems.slice(0, pageSize)
+      : fetchedItems
+
+    let nextCursor: { mimeType: string; name: string; id: number } | null = null
+    if (hasNextPage) {
+      const lastItem = itemsToReturn[itemsToReturn.length - 1]
+      nextCursor = {
+        mimeType: lastItem.mimeType,
+        name: lastItem.name,
+        id: lastItem.id
+      }
+    }
+
+    return successResponse(SuccessCodes.OK, {
+      items: itemsToReturn,
+      nextPageToken: nextCursor ? JSON.stringify(nextCursor) : null,
+      hasMore: hasNextPage
+    })
+  } catch (err: any) {
+    console.error('Error fetching items list:', err)
+    return errorResponse(
+      ErrorCodes.INTERNAL_SERVER_ERROR,
+      `Failed to list items: ${err.message || 'Unknown error'}`
+    )
+  }
 }
 
 export async function POST(req: Request) {

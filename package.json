@@ -30,6 +30,7 @@
     "drizzle-kit": "^0.31.1",
     "drizzle-orm": "^0.44.2",
     "lucide-react": "^0.522.0",
+    "nanoid": "^5.1.5",
     "next": "15.3.4",
     "postgres": "^3.4.7",
     "react": "^19.0.0",

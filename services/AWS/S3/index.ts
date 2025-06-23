@@ -48,22 +48,15 @@ if (process.env.NODE_ENV === 'development') {
   })
 }
 
-export const uploadFileToS3 = async (
-  file: File,
-  key?: string,
-  modifiedFileName?: string
-) => {
+export const uploadFileToS3 = async (file: File, key: string) => {
   const arrayBuffer = await file.arrayBuffer()
   const fileBuffer = Buffer.from(arrayBuffer)
-  const fileName = modifiedFileName ? modifiedFileName : file.name
   const size = fileBuffer.byteLength
-  const objectKey = key ? `${key}/${fileName}` : `${fileName}`
-
   const upload = new Upload({
     client: s3Client,
     params: {
       Bucket: bucket,
-      Key: objectKey,
+      Key: key,
       Body: Readable.from(fileBuffer),
       ContentType: file.type,
       ACL: 'private',
@@ -72,6 +65,7 @@ export const uploadFileToS3 = async (
     }
   })
 
+  //TODO: Create a table to save progress to show on the Frontend (if time permits).
   upload.on('httpUploadProgress', (progress) => {
     console.log(progress)
   })
@@ -107,9 +101,7 @@ export const getPreSignedURL = async (key: string) => {
     Key: key
   })
 
-  const presignedUrl = await getSignedUrl(s3Client, command, {
+  return await getSignedUrl(s3Client, command, {
     expiresIn: 3600
   })
-
-  return presignedUrl
 }

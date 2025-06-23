@@ -50,6 +50,20 @@
       "when": 1750682743975,
       "tag": "0006_safe_the_hood",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1750698335732,
+      "tag": "0007_big_talisman",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1750700574954,
+      "tag": "0008_secret_boom_boom",
+      "breakpoints": true
     }
   ]
 }

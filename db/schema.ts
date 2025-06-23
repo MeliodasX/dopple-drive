@@ -10,7 +10,8 @@ import {
   varchar
 } from 'drizzle-orm/pg-core'
 import { timestamps } from '@/db/helpers/timestamps'
-import { InferSelectModel, relations } from 'drizzle-orm'
+import { InferSelectModel, relations, sql } from 'drizzle-orm'
+import { FOLDER_MIME_TYPE } from '@/utils/constants'
 
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
@@ -31,7 +32,7 @@ export const items = pgTable(
     fileUrl: text('file_url'),
     size: bigint('size', { mode: 'number' }),
     key: text('key'),
-    mimeType: text('mime_type'),
+    mimeType: text('mime_type').notNull().default('application/octet-stream'),
     parentId: integer('parent_id').references((): AnyPgColumn => items.id, {
       onDelete: 'cascade'
     }),
@@ -51,7 +52,10 @@ export const items = pgTable(
         table.id
       ),
       parentIdIdx: index('items_parent_id_idx').on(table.parentId),
-      nameIdx: index('items_name_idx').on(table.name)
+      nameIdx: index('items_name_idx').on(table.name),
+      namePerFolderPerUserUnique: uniqueIndex('items_name_parent_user_file_idx')
+        .on(table.userId, table.parentId, table.name)
+        .where(sql.raw(`mime_type != '${FOLDER_MIME_TYPE}'`))
     }
   }
 )
