@@ -6,16 +6,6 @@ import { BasicHeader } from '@/components/basic-header'
 import { ReactNode } from 'react'
 import QueryProvider from '@/query/QueryProvider'
 
-const setThemeScript = `
-    (function() {
-      try {
-        document.documentElement.classList.toggle('dark', true);
-      } catch (e) {
-        console.log("Unable to set theme");
-      }
-    })();
-  `
-
 const geistSans = Geist({
   variable: '--font-geist-sans',
   subsets: ['latin']
@@ -38,9 +28,9 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en">
+      <html lang="en" className="dark">
         <head>
-          <script dangerouslySetInnerHTML={{ __html: setThemeScript }} />
+          <script/>
           <title>Dopple Drive</title>
         </head>
         <body
