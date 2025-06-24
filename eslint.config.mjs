@@ -26,6 +26,8 @@ const eslintConfig = [
         },
       ],
       'react/react-in-jsx-scope': 'off',
+      '@typescript-eslint/no-unused-vars': 'warn',
+      '@typescript-eslint/no-explicit-any': 'warn'
     },
   }),
 ];

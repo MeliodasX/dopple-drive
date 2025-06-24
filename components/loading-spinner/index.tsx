@@ -12,12 +12,12 @@ interface LoadingSpinnerProps {
   text?: string
 }
 
-export function LoadingSpinner({
+export const LoadingSpinner = ({
   size = 'md',
   variant = 'cloud',
   className,
   text
-}: LoadingSpinnerProps) {
+}: LoadingSpinnerProps) => {
   const sizeClasses = {
     sm: 'h-4 w-4',
     md: 'h-6 w-6',

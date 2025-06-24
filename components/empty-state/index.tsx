@@ -32,7 +32,7 @@ function isCloneableWithClassName(
   return React.isValidElement(element) && 'className' in (element as any).props
 }
 
-export function EmptyState({
+export const EmptyState = ({
   variant = 'default',
   title,
   description,
@@ -40,7 +40,7 @@ export function EmptyState({
   action,
   className,
   size = 'md'
-}: EmptyStateProps) {
+}: EmptyStateProps) => {
   const getVariantContent = () => {
     switch (variant) {
       case 'search':
@@ -87,7 +87,6 @@ export function EmptyState({
   const finalDescription = description || variantContent.description
   const finalIcon = icon || variantContent.icon
 
-  // Size configurations
   const sizeConfig = {
     sm: {
       container: 'py-8',

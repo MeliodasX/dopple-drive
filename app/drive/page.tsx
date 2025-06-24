@@ -27,6 +27,7 @@ import { Button } from '@/components/ui/button'
 import { Download, MoreVertical, Share, Trash2 } from 'lucide-react'
 import { formatGoogleDriveDate } from '@/utils/format-google-drive-date'
 import { formatGoogleDriveFileSize } from '@/utils/format-google-drive-file-size'
+import { DriveBreadcrumb } from '@/components/bread-crumb'
 
 export default function Home() {
   const { currentDirectoryId, setCurrentDirectoryId } = useDoppleStore(
@@ -77,11 +78,7 @@ export default function Home() {
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage])
   return (
     <div className="p-4 md:p-8">
-      <h1 className="mb-4 text-2xl font-bold">
-        Current Directory:{' '}
-        {currentDirectoryId === null ? 'Root' : `Folder ${currentDirectoryId}`}
-      </h1>
-
+      <DriveBreadcrumb />
       {status === 'pending' ? (
         <div className="flex min-h-[90vh] w-full flex-col items-center justify-center">
           <LoadingSpinner size="lg" />
@@ -178,7 +175,7 @@ export default function Home() {
             {sortedItems.map((item) => (
               <div
                 key={item.id}
-                onDoubleClick={() =>
+                onClick={() =>
                   item.mimeType === FOLDER_MIME_TYPE &&
                   handleFolderClick(item.id)
                 }

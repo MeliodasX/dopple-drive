@@ -14,7 +14,7 @@ interface FileUploadModalProps {
   onClose: () => void
 }
 
-export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
+export const FileUploadModal = ({ isOpen, onClose }: FileUploadModalProps) => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [dragActive, setDragActive] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -24,7 +24,7 @@ export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
   const queryClient = useQueryClient()
   const { mutate, isPending: isUploading } = useMutation({
     mutationFn: (fileToUpload: File) =>
-      createFile(fileToUpload, UploadMode.COPY, null),
+      createFile(fileToUpload, UploadMode.COPY, currentDirectoryId),
     onSuccess: () => {
       toast.success('Successful', {
         duration: 2000,

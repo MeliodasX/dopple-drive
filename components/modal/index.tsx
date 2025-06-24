@@ -14,14 +14,24 @@ interface ModalProps {
   showCloseButton?: boolean
 }
 
-export function Modal({
+interface ModalBodyProps {
+  children: React.ReactNode
+  className?: string
+}
+
+interface ModalFooterProps {
+  children: React.ReactNode
+  className?: string
+}
+
+export const Modal = ({
   isOpen,
   onClose,
   title,
   children,
   size = 'md',
   showCloseButton = true
-}: ModalProps) {
+}: ModalProps) => {
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
@@ -84,21 +94,11 @@ export function Modal({
   )
 }
 
-interface ModalBodyProps {
-  children: React.ReactNode
-  className?: string
-}
-
-export function ModalBody({ children, className = '' }: ModalBodyProps) {
+export const ModalBody = ({ children, className = '' }: ModalBodyProps) => {
   return <div className={`p-6 ${className}`}>{children}</div>
 }
 
-interface ModalFooterProps {
-  children: React.ReactNode
-  className?: string
-}
-
-export function ModalFooter({ children, className = '' }: ModalFooterProps) {
+export const ModalFooter = ({ children, className = '' }: ModalFooterProps) => {
   return (
     <div
       className={`flex items-center justify-end gap-3 border-t border-slate-800 bg-slate-900/50 p-6 ${className}`}

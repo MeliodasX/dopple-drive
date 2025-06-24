@@ -54,7 +54,7 @@ export interface PaginatedItemsResponse {
   hasMore: boolean
 }
 
-export interface GetItemsContext {
-  queryKey: readonly (string | number | null)[]
-  pageParam: string | null
+export interface BreadcrumbItem {
+  id: number | null
+  name: string
 }

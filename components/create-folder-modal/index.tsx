@@ -15,7 +15,10 @@ interface CreateFolderModalProps {
   onClose: () => void
 }
 
-export function CreateFolderModal({ isOpen, onClose }: CreateFolderModalProps) {
+export const CreateFolderModal = ({
+  isOpen,
+  onClose
+}: CreateFolderModalProps) => {
   const [folderName, setFolderName] = useState('')
   const { currentDirectoryId } = useDoppleStore((state) => state)
 
@@ -28,7 +31,9 @@ export function CreateFolderModal({ isOpen, onClose }: CreateFolderModalProps) {
         duration: 2000,
         description: 'Folder created successfully.'
       })
-      queryClient.invalidateQueries({ queryKey: [QueryKeys.ITEMS, null] })
+      queryClient.invalidateQueries({
+        queryKey: [QueryKeys.ITEMS, currentDirectoryId]
+      })
       handleClose()
     },
     onError: (error) => {
