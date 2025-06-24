@@ -45,16 +45,17 @@ import { FilePreviewModal } from '@/components/file-preview-modal'
 import { Item } from '@/types/item-types'
 import { startDownloadForItem } from '@/services/download-service'
 import { RenameModal } from '@/components/rename-model'
+import { SimpleDeleteDialog } from '@/components/delete-dialog'
 
 export default function Home() {
   const { currentDirectoryId, setCurrentDirectoryId } = useDoppleStore(
     (state) => state
   )
-  const [selectedFile, setSelectedFile] = useState<Item | null>(null)
+  const [selectedItem, setSelectedItem] = useState<Item | null>(null)
   const [openFilePreviewModal, setOpenFilePreviewModal] =
     useState<boolean>(false)
-  const [openRenamePreviewModal, setOpenRenamePreviewModal] =
-    useState<boolean>(false)
+  const [openRenameModal, setOpenRenameModal] = useState<boolean>(false)
+  const [openDeleteModal, setOpenDeleteModal] = useState<boolean>(false)
 
   const {
     data,
@@ -76,7 +77,7 @@ export default function Home() {
   }
 
   const handleFileClick = (item: Item) => {
-    setSelectedFile(item)
+    setSelectedItem(item)
     setOpenFilePreviewModal(true)
   }
 
@@ -86,8 +87,13 @@ export default function Home() {
   }
 
   const handleRenameClick = (item: Item) => {
-    setSelectedFile(item)
-    setOpenRenamePreviewModal(true)
+    setSelectedItem(item)
+    setOpenRenameModal(true)
+  }
+
+  const handleDeleteClick = (item: Item) => {
+    setSelectedItem(item)
+    setOpenDeleteModal(true)
   }
 
   const getFileIcon = (type: string) => {
@@ -140,12 +146,17 @@ export default function Home() {
       <FilePreviewModal
         isOpen={openFilePreviewModal}
         onClose={() => setOpenFilePreviewModal(false)}
-        fileId={selectedFile?.id ?? null}
+        fileId={selectedItem?.id ?? null}
       />
       <RenameModal
-        isOpen={openRenamePreviewModal}
-        onClose={() => setOpenRenamePreviewModal(false)}
-        item={selectedFile}
+        isOpen={openRenameModal}
+        onClose={() => setOpenRenameModal(false)}
+        item={selectedItem}
+      />
+      <SimpleDeleteDialog
+        isOpen={openDeleteModal}
+        onClose={() => setOpenDeleteModal(false)}
+        item={selectedItem}
       />
       {status === 'pending' ? (
         <div className="flex min-h-[90vh] w-full flex-col items-center justify-center">
@@ -234,7 +245,10 @@ export default function Home() {
                               Rename
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="bg-slate-700" />
-                            <DropdownMenuItem className="text-red-400 focus:bg-red-900/50 focus:text-red-400">
+                            <DropdownMenuItem
+                              onClick={() => handleDeleteClick(item)}
+                              className="text-red-400 focus:bg-red-900/50 focus:text-red-400"
+                            >
                               <Trash2 className="mr-2 h-4 w-4" /> Delete
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -294,7 +308,10 @@ export default function Home() {
                         <FilePenLineIcon className="mr-2 h-4 w-4" /> Rename
                       </DropdownMenuItem>
                       <DropdownMenuSeparator className="bg-slate-700" />
-                      <DropdownMenuItem className="text-red-400 focus:bg-red-900/50 focus:text-red-400">
+                      <DropdownMenuItem
+                        onClick={() => handleDeleteClick(item)}
+                        className="text-red-400 focus:bg-red-900/50 focus:text-red-400"
+                      >
                         <Trash2 className="mr-2 h-4 w-4" /> Delete
                       </DropdownMenuItem>
                     </DropdownMenuContent>
