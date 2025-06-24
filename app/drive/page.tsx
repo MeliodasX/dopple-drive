@@ -24,10 +24,23 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
-import { Download, MoreVertical, Share, Trash2 } from 'lucide-react'
+import {
+  Download,
+  FileIcon,
+  FileSpreadsheetIcon,
+  FileTextIcon,
+  FilmIcon,
+  FolderIcon,
+  ImageIcon,
+  MoreVertical,
+  MusicIcon,
+  Share,
+  Trash2
+} from 'lucide-react'
 import { formatGoogleDriveDate } from '@/utils/format-google-drive-date'
 import { formatGoogleDriveFileSize } from '@/utils/format-google-drive-file-size'
 import { DriveBreadcrumb } from '@/components/bread-crumb'
+import { getCategoryFromMimeType } from '@/utils/get-category-from-mime-type'
 
 export default function Home() {
   const { currentDirectoryId, setCurrentDirectoryId } = useDoppleStore(
@@ -51,6 +64,27 @@ export default function Home() {
 
   const handleFolderClick = (folderId: number) => {
     setCurrentDirectoryId(folderId)
+  }
+
+  function getFileIcon(type: string) {
+    switch (type) {
+      case 'folder':
+        return <FolderIcon className="h-5 w-5 text-blue-400" />
+      case 'image':
+        return <ImageIcon className="h-5 w-5 text-green-400" />
+      case 'audio':
+        return <MusicIcon className="h-5 w-5 text-green-400" />
+      case 'document':
+        return <FileTextIcon className="h-5 w-5 text-blue-300" />
+      case 'spreadsheet':
+        return <FileSpreadsheetIcon className="h-5 w-5 text-green-500" />
+      case 'video':
+        return <FilmIcon className="h-5 w-5 text-purple-400" />
+      case 'presentation':
+        return <FileIcon className="h-5 w-5 text-orange-400" />
+      default:
+        return <FileIcon className="h-5 w-5 text-slate-400" />
+    }
   }
 
   const sortedItems = useMemo(() => {
@@ -122,7 +156,7 @@ export default function Home() {
                     >
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-3">
-                          {/*{getFileIcon(item.mimeType)}*/}
+                          {getFileIcon(getCategoryFromMimeType(item.mimeType))}
                           <span className="text-slate-100 transition-colors group-hover:text-blue-400">
                             {item.name}
                           </span>
@@ -183,7 +217,7 @@ export default function Home() {
               >
                 <div className="flex items-start justify-between">
                   <div className="flex min-w-0 flex-1 items-center gap-3">
-                    {/*{getFileIcon(item.mimeType)}*/}
+                    {getFileIcon(getCategoryFromMimeType(item.mimeType))}
                     <div className="min-w-0 flex-1">
                       <h3 className="truncate font-medium text-slate-100">
                         {item.name}
