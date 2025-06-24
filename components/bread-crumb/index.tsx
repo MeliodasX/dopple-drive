@@ -47,7 +47,7 @@ export const DriveBreadcrumb = () => {
   }
 
   return (
-    <div className="border-b border-slate-800 bg-slate-900/50">
+    <div className="my-4 border-b border-slate-800 bg-slate-900/50">
       <div className="md:hidden">
         <CompactBreadcrumb items={items} onNavigate={handleNavigate} />
       </div>
