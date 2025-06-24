@@ -12,11 +12,11 @@ import {
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { toast } from '@/lib/toast'
-import { isSingleItemFileResponse } from '@/types/type-guards' // Assuming you have this
+import { isSingleItemFileResponse } from '@/types/type-guards'
 import { QueryKeys } from '@/query/QueryProvider'
 import { SingleItemFileResponse } from '@/types/item-types'
 import { getResourceById } from '@/requests/items'
+import { downloadFile } from '@/services/download-service'
 
 const getFileCategory = (mimeType?: string) => {
   if (!mimeType) return 'unknown'
@@ -26,6 +26,11 @@ const getFileCategory = (mimeType?: string) => {
   if (mainType === 'audio') return 'audio'
   if (mimeType === 'application/pdf') return 'pdf'
   return 'unknown'
+}
+
+const handleDownload = (file: SingleItemFileResponse | undefined | null) => {
+  if (!file?.signedUrl) return
+  downloadFile(file)
 }
 
 const ImagePreview = ({ file }: { file: SingleItemFileResponse }) => {
@@ -79,7 +84,7 @@ const UnsupportedPreview = ({ file }: { file: SingleItemFileResponse }) => (
     <h3 className="mb-2 text-xl font-semibold text-slate-100">{file.name}</h3>
     <p className="mb-6 text-slate-400">This file type cannot be previewed.</p>
     <Button
-      onClick={() => window.open(file.signedUrl, '_blank')}
+      onClick={() => handleDownload(file)}
       className="bg-blue-600 text-white hover:bg-blue-500"
     >
       <Download className="mr-2 h-4 w-4" />
@@ -94,12 +99,6 @@ interface PreviewHeaderProps {
 }
 
 const PreviewHeader = ({ file, onClose }: PreviewHeaderProps) => {
-  const handleDownload = () => {
-    if (!file?.signedUrl) return
-    toast.info(`Downloading ${file.name}`)
-    window.open(file.signedUrl, '_blank')
-  }
-
   return (
     <header className="absolute top-0 right-0 left-0 z-10 flex h-16 items-center justify-between gap-4 bg-gradient-to-b from-black/50 to-transparent p-4">
       <div className="flex min-w-0 items-center gap-2">
@@ -121,7 +120,7 @@ const PreviewHeader = ({ file, onClose }: PreviewHeaderProps) => {
         <Button
           variant="ghost"
           size="icon"
-          onClick={handleDownload}
+          onClick={() => handleDownload(file)}
           disabled={!file}
           className="text-white hover:bg-white/10"
         >

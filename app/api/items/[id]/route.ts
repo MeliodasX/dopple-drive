@@ -10,7 +10,7 @@ import { ErrorCodes, SuccessCodes } from '@/types/errors'
 import { db } from '@/db'
 import { items } from '@/db/schema'
 import { and, eq, isNull, like, not, sql } from 'drizzle-orm'
-import { deleteFileFromS3, getPreSignedURL } from '@/services/AWS/S3'
+import { deleteFileFromS3, getPreSignedURL } from '@/services/aws/s3'
 import { FOLDER_MIME_TYPE } from '@/utils/constants'
 
 export async function GET(

@@ -1,7 +1,7 @@
 import { checkAuthStatusOnApi } from '@/utils/check-auth-status-on-api'
 import { errorResponse, successResponse } from '@/utils/response-wrappers'
 import { ErrorCodes, SuccessCodes } from '@/types/errors'
-import { deleteFileFromS3, uploadFileToS3 } from '@/services/AWS/S3'
+import { deleteFileFromS3, uploadFileToS3 } from '@/services/aws/s3'
 import {
   FileInsertPayload,
   FolderInsertPayload,
