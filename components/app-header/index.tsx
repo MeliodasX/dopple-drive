@@ -12,9 +12,11 @@ export const AppHeader = async () => {
         <header className="flex h-16 w-full items-center justify-between gap-4 border-b border-slate-800 bg-slate-900/50 p-4 backdrop-blur-sm">
           <DoppleLogo size={'medium'} />
           <SearchBar />
-          <SignedIn>
-            <UserButton />
-          </SignedIn>
+          <div className="h-8 w-8 flex-shrink-0">
+            <SignedIn>
+              <UserButton />
+            </SignedIn>
+          </div>
         </header>
       )}
     </>
