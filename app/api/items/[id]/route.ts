@@ -182,7 +182,7 @@ export async function PATCH(
 
         await trx
           .update(items)
-          .set({ parentId: newParentId })
+          .set({ parentId: newParentId, updatedAt: new Date() })
           .where(eq(items.id, itemToUpdate.id))
         targetParentId = newParentId
       }
@@ -212,7 +212,7 @@ export async function PATCH(
         }
         await trx
           .update(items)
-          .set({ name })
+          .set({ name, updatedAt: new Date() })
           .where(eq(items.id, itemToUpdate.id))
       }
 

@@ -5,7 +5,7 @@ import {
   SingleItemFolderResponse,
   UploadMode
 } from '@/types/item-types'
-import { doDelete, doGet, doPost, doPostFormData, doPut } from '@/requests'
+import { doDelete, doGet, doPatch, doPost, doPostFormData } from '@/requests'
 import { FOLDER_MIME_TYPE } from '@/utils/constants'
 import { QueryFunctionContext } from '@tanstack/react-query'
 
@@ -106,7 +106,7 @@ export const updateResourceById = async (
     parentId?: number | null
   }
 ): Promise<Item> => {
-  const response = await doPut(`/file/${id}`, payload)
+  const response = await doPatch(`/items/${id}`, payload)
 
   if (!response.ok) {
     const errorData = await response.json()
@@ -118,5 +118,5 @@ export const updateResourceById = async (
 }
 
 export const deleteResourceById = async (id: number): Promise<void> => {
-  await doDelete(`/file/${id}`)
+  await doDelete(`/items/${id}`)
 }

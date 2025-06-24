@@ -44,14 +44,18 @@ import { getCategoryFromMimeType } from '@/utils/get-category-from-mime-type'
 import { FilePreviewModal } from '@/components/file-preview-modal'
 import { Item } from '@/types/item-types'
 import { startDownloadForItem } from '@/services/download-service'
+import { RenameModal } from '@/components/rename-model'
 
 export default function Home() {
   const { currentDirectoryId, setCurrentDirectoryId } = useDoppleStore(
     (state) => state
   )
-  const [selectedFile, setSelectedFile] = useState<number | null>(null)
+  const [selectedFile, setSelectedFile] = useState<Item | null>(null)
   const [openFilePreviewModal, setOpenFilePreviewModal] =
     useState<boolean>(false)
+  const [openRenamePreviewModal, setOpenRenamePreviewModal] =
+    useState<boolean>(false)
+
   const {
     data,
     error,
@@ -67,18 +71,23 @@ export default function Home() {
     initialPageParam: null
   })
 
-  const handleFolderClick = (folderId: number) => {
-    setCurrentDirectoryId(folderId)
+  const handleFolderClick = (item: Item) => {
+    setCurrentDirectoryId(item.id)
   }
 
-  const handleFileClick = (fileId: number) => {
-    setSelectedFile(fileId)
+  const handleFileClick = (item: Item) => {
+    setSelectedFile(item)
     setOpenFilePreviewModal(true)
   }
 
   const handleItemClick = (item: Item) => {
-    if (item.mimeType === FOLDER_MIME_TYPE) handleFolderClick(item.id)
-    else handleFileClick(item.id)
+    if (item.mimeType === FOLDER_MIME_TYPE) handleFolderClick(item)
+    else handleFileClick(item)
+  }
+
+  const handleRenameClick = (item: Item) => {
+    setSelectedFile(item)
+    setOpenRenamePreviewModal(true)
   }
 
   const getFileIcon = (type: string) => {
@@ -131,7 +140,12 @@ export default function Home() {
       <FilePreviewModal
         isOpen={openFilePreviewModal}
         onClose={() => setOpenFilePreviewModal(false)}
-        fileId={selectedFile}
+        fileId={selectedFile?.id ?? null}
+      />
+      <RenameModal
+        isOpen={openRenamePreviewModal}
+        onClose={() => setOpenRenamePreviewModal(false)}
+        item={selectedFile}
       />
       {status === 'pending' ? (
         <div className="flex min-h-[90vh] w-full flex-col items-center justify-center">
@@ -212,7 +226,10 @@ export default function Home() {
                                 <Download className="mr-2 h-4 w-4" /> Download
                               </DropdownMenuItem>
                             )}
-                            <DropdownMenuItem className="text-slate-100 focus:bg-slate-700">
+                            <DropdownMenuItem
+                              onClick={() => handleRenameClick(item)}
+                              className="text-slate-100 focus:bg-slate-700"
+                            >
                               <FilePenLineIcon className="mr-2 h-4 w-4" />{' '}
                               Rename
                             </DropdownMenuItem>
@@ -270,7 +287,10 @@ export default function Home() {
                           <Download className="mr-2 h-4 w-4" /> Download
                         </DropdownMenuItem>
                       )}
-                      <DropdownMenuItem className="text-slate-100 focus:bg-slate-700">
+                      <DropdownMenuItem
+                        onClick={() => handleRenameClick(item)}
+                        className="text-slate-100 focus:bg-slate-700"
+                      >
                         <FilePenLineIcon className="mr-2 h-4 w-4" /> Rename
                       </DropdownMenuItem>
                       <DropdownMenuSeparator className="bg-slate-700" />
