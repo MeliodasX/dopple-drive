@@ -15,6 +15,7 @@ import { and, asc, eq, InferSelectModel, isNull, not, sql } from 'drizzle-orm'
 import { FOLDER_MIME_TYPE } from '@/utils/constants'
 import { nanoid } from 'nanoid'
 import { generateNumberedFileName } from '@/utils/generate-numbered-file-name'
+import { NextRequest } from 'next/server'
 
 const handleMaterializedPath = async (
   parentId: number | null,
@@ -228,18 +229,7 @@ const handleFileCreation = async (req: Request, userId: number) => {
   return successResponse(SuccessCodes.CREATED, insert)
 }
 
-export async function GET(
-  req: Request,
-  {
-    searchParams
-  }: {
-    searchParams: Promise<{
-      parentId: string | undefined
-      pageSize: string | undefined
-      pageToken: string | undefined
-    }>
-  }
-) {
+export async function GET(req: NextRequest) {
   await checkAuthStatusOnApi()
   const userId = await getUserIdFromClerkId()
 
@@ -247,11 +237,10 @@ export async function GET(
     return errorResponse(ErrorCodes.FORBIDDEN, "Couldn't find user")
   }
 
-  const {
-    parentId: parentIdParam,
-    pageSize: pageSizeParam,
-    pageToken: pageTokenParam
-  } = await searchParams
+  const searchParams = req.nextUrl.searchParams
+  const parentIdParam = searchParams.get('parentId')
+  const pageSizeParam = searchParams.get('pageSize')
+  const pageTokenParam = searchParams.get('pageToken')
 
   const targetParentId: number | null = parentIdParam
     ? parseInt(parentIdParam, 10)
@@ -267,7 +256,10 @@ export async function GET(
 
   if (pageTokenParam) {
     try {
-      pageTokenCursor = JSON.parse(pageTokenParam)
+      const decodedToken = Buffer.from(pageTokenParam, 'base64').toString(
+        'ascii'
+      )
+      pageTokenCursor = JSON.parse(decodedToken)
       if (
         pageTokenCursor &&
         (typeof pageTokenCursor.mimeType !== 'string' ||
@@ -330,9 +322,13 @@ export async function GET(
       }
     }
 
+    const nextPageToken = nextCursor
+      ? Buffer.from(JSON.stringify(nextCursor)).toString('base64')
+      : null
+
     return successResponse(SuccessCodes.OK, {
       items: itemsToReturn,
-      nextPageToken: nextCursor ? JSON.stringify(nextCursor) : null,
+      nextPageToken,
       hasMore: hasNextPage
     })
   } catch (err: any) {

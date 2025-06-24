@@ -9,7 +9,7 @@ import { NextResponse } from 'next/server'
 export const success = (payload?: object) => {
   return {
     success: true,
-    payload: payload ?? null
+    data: payload ?? null
   }
 }
 

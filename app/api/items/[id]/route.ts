@@ -4,7 +4,6 @@ import { NextResponse } from 'next/server'
 import {
   error,
   errorResponse,
-  success,
   successResponse
 } from '@/utils/response-wrappers'
 import { ErrorCodes, SuccessCodes } from '@/types/errors'
@@ -93,7 +92,6 @@ export async function GET(
   }
 }
 
-// TODO: Update this to conform to the new items table
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
