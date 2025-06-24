@@ -1,31 +1,29 @@
-import { FOLDER_MIME_TYPE } from '@/utils/constants'
 import {
-  BaseItemInsertPayload,
-  FileInsertPayload,
-  FolderInsertPayload
+  SingleItemFileResponse,
+  SingleItemFolderResponse
 } from '@/types/item-types'
 
-export function isFileInsertPayload(
-  payload: BaseItemInsertPayload
-): payload is FileInsertPayload {
+export function isSingleItemFileResponse(
+  response: any
+): response is SingleItemFileResponse {
   return (
-    payload.mimeType !== FOLDER_MIME_TYPE &&
-    typeof (payload as FileInsertPayload).fileUrl === 'string' &&
-    typeof (payload as FileInsertPayload).size === 'number' &&
-    typeof (payload as FileInsertPayload).key === 'string'
+    response &&
+    typeof response === 'object' &&
+    'signedUrl' in response &&
+    typeof response.signedUrl === 'string' &&
+    'id' in response
   )
 }
 
-export function isFolderInsertPayload(
-  payload: BaseItemInsertPayload
-): payload is FolderInsertPayload {
+export function isSingleItemFolderResponse(
+  response: any
+): response is SingleItemFolderResponse {
   return (
-    payload.mimeType === FOLDER_MIME_TYPE &&
-    ((payload as FolderInsertPayload).fileUrl === null ||
-      (payload as FolderInsertPayload).fileUrl === undefined) &&
-    ((payload as FolderInsertPayload).size === null ||
-      (payload as FolderInsertPayload).size === undefined) &&
-    ((payload as FolderInsertPayload).key === null ||
-      (payload as FolderInsertPayload).key === undefined)
+    response &&
+    typeof response === 'object' &&
+    'folder' in response &&
+    typeof response.folder === 'object' &&
+    'children' in response &&
+    Array.isArray(response.children)
   )
 }

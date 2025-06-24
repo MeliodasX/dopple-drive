@@ -1,4 +1,3 @@
-import Image from 'next/image'
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import {
@@ -6,13 +5,10 @@ import {
   Badge,
   Check,
   Cloud,
-  Github,
-  Globe,
   Share2,
   Shield,
   Smartphone,
   Star,
-  Twitter,
   Upload,
   Users,
   Zap
@@ -336,7 +332,7 @@ export default async function Home() {
 
           <div className="mt-12 flex flex-col items-center justify-between border-t border-slate-800 pt-8 md:flex-row">
             <p className="text-sm text-slate-400">
-              © 2025 Dopple Drive. All rights reserved.
+              © 2025 Created by MeliodasX. All rights reserved.
             </p>
             <div className="mt-4 flex gap-6 md:mt-0">
               <Link

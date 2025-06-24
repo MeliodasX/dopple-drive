@@ -4,6 +4,7 @@ import type React from 'react'
 import { useEffect } from 'react'
 import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 interface ModalProps {
   isOpen: boolean
@@ -12,6 +13,7 @@ interface ModalProps {
   children: React.ReactNode
   size?: 'sm' | 'md' | 'lg' | 'xl'
   showCloseButton?: boolean
+  className?: string
 }
 
 interface ModalBodyProps {
@@ -30,6 +32,7 @@ export const Modal = ({
   title,
   children,
   size = 'md',
+  className,
   showCloseButton = true
 }: ModalProps) => {
   useEffect(() => {
@@ -60,7 +63,12 @@ export const Modal = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div
+      className={cn(
+        className,
+        'fixed inset-0 z-50 flex items-center justify-center p-4'
+      )}
+    >
       <div
         className="animate-in fade-in absolute inset-0 bg-black/60 backdrop-blur-sm duration-200"
         onClick={onClose}

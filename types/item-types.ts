@@ -40,7 +40,7 @@ export interface Item {
 }
 
 export interface SingleItemFileResponse extends Item {
-  presignedUrl: string
+  signedUrl: string
 }
 
 export interface SingleItemFolderResponse {

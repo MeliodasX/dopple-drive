@@ -3,7 +3,7 @@
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { useDoppleStore } from '@/providers/dopple-store-provider'
 import { getItems } from '@/requests/items'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useInView } from 'react-intersection-observer'
 import { FOLDER_MIME_TYPE } from '@/utils/constants'
 import { LoadingSpinner } from '@/components/loading-spinner'
@@ -41,12 +41,16 @@ import { formatGoogleDriveDate } from '@/utils/format-google-drive-date'
 import { formatGoogleDriveFileSize } from '@/utils/format-google-drive-file-size'
 import { DriveBreadcrumb } from '@/components/bread-crumb'
 import { getCategoryFromMimeType } from '@/utils/get-category-from-mime-type'
+import { FilePreviewModal } from '@/components/file-preview-modal'
+import { Item } from '@/types/item-types'
 
 export default function Home() {
   const { currentDirectoryId, setCurrentDirectoryId } = useDoppleStore(
     (state) => state
   )
-
+  const [selectedFile, setSelectedFile] = useState<number | null>(null)
+  const [openFilePreviewModal, setOpenFilePreviewModal] =
+    useState<boolean>(false)
   const {
     data,
     error,
@@ -66,7 +70,17 @@ export default function Home() {
     setCurrentDirectoryId(folderId)
   }
 
-  function getFileIcon(type: string) {
+  const handleFileClick = (fileId: number) => {
+    setSelectedFile(fileId)
+    setOpenFilePreviewModal(true)
+  }
+
+  const handleItemClick = (item: Item) => {
+    if (item.mimeType === FOLDER_MIME_TYPE) handleFolderClick(item.id)
+    else handleFileClick(item.id)
+  }
+
+  const getFileIcon = (type: string) => {
     switch (type) {
       case 'folder':
         return <FolderIcon className="h-5 w-5 text-blue-400" />
@@ -113,6 +127,11 @@ export default function Home() {
   return (
     <div className="p-4 md:p-8">
       <DriveBreadcrumb />
+      <FilePreviewModal
+        isOpen={openFilePreviewModal}
+        onClose={() => setOpenFilePreviewModal(false)}
+        fileId={selectedFile}
+      />
       {status === 'pending' ? (
         <div className="flex min-h-[90vh] w-full flex-col items-center justify-center">
           <LoadingSpinner size="lg" />
@@ -148,10 +167,9 @@ export default function Home() {
                   {sortedItems.map((item) => (
                     <TableRow
                       key={item.id}
-                      onDoubleClick={() =>
-                        item.mimeType === FOLDER_MIME_TYPE &&
-                        handleFolderClick(item.id)
-                      }
+                      onDoubleClick={() => {
+                        handleItemClick(item)
+                      }}
                       className="group cursor-pointer border-slate-800 hover:bg-slate-800/30"
                     >
                       <TableCell className="font-medium">
@@ -209,10 +227,9 @@ export default function Home() {
             {sortedItems.map((item) => (
               <div
                 key={item.id}
-                onClick={() =>
-                  item.mimeType === FOLDER_MIME_TYPE &&
-                  handleFolderClick(item.id)
-                }
+                onClick={() => () => {
+                  handleItemClick(item)
+                }}
                 className="rounded-lg border border-slate-800 bg-slate-900/30 p-4 transition-colors hover:bg-slate-800/30"
               >
                 <div className="flex items-start justify-between">
