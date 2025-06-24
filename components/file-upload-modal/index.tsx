@@ -7,6 +7,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createFile } from '@/requests/items'
 import { toast } from '@/lib/toast'
 import { UploadMode } from '@/types/item-types'
+import { useDoppleStore } from '@/providers/dopple-store-provider'
 
 interface FileUploadModalProps {
   isOpen: boolean
@@ -18,6 +19,8 @@ export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
   const [dragActive, setDragActive] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const { currentDirectoryId } = useDoppleStore((state) => state)
+
   const queryClient = useQueryClient()
   const { mutate, isPending: isUploading } = useMutation({
     mutationFn: (fileToUpload: File) =>
@@ -27,7 +30,7 @@ export function FileUploadModal({ isOpen, onClose }: FileUploadModalProps) {
         duration: 2000,
         description: 'File added successfully.'
       })
-      queryClient.invalidateQueries({ queryKey: ['items', null] })
+      queryClient.invalidateQueries({ queryKey: ['items', currentDirectoryId] })
       handleClose()
     },
     onError: (error) => {

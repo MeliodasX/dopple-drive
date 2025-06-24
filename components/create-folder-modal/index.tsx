@@ -8,6 +8,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createFolder } from '@/requests/items'
 import { QueryKeys } from '@/query/QueryProvider'
 import { toast } from '@/lib/toast'
+import { useDoppleStore } from '@/providers/dopple-store-provider'
 
 interface CreateFolderModalProps {
   isOpen: boolean
@@ -16,11 +17,12 @@ interface CreateFolderModalProps {
 
 export function CreateFolderModal({ isOpen, onClose }: CreateFolderModalProps) {
   const [folderName, setFolderName] = useState('')
+  const { currentDirectoryId } = useDoppleStore((state) => state)
 
   const queryClient = useQueryClient()
 
   const { mutate, isPending } = useMutation({
-    mutationFn: () => createFolder(folderName.trim(), null),
+    mutationFn: () => createFolder(folderName.trim(), currentDirectoryId),
     onSuccess: () => {
       toast.success('Successful', {
         duration: 2000,

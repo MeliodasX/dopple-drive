@@ -6,6 +6,7 @@ import { BasicHeader } from '@/components/basic-header'
 import { ReactNode } from 'react'
 import QueryProvider from '@/query/QueryProvider'
 import { Toaster } from '@/components/ui/sonner'
+import { DoppleStoreProvider } from '@/providers/dopple-store-provider'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -37,10 +38,12 @@ export default function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
-          <QueryProvider>
-            <BasicHeader />
-            {children}
-          </QueryProvider>
+          <DoppleStoreProvider>
+            <QueryProvider>
+              <BasicHeader />
+              {children}
+            </QueryProvider>
+          </DoppleStoreProvider>
           <Toaster
             position="top-right"
             expand={true}
