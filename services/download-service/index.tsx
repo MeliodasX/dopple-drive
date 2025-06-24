@@ -1,8 +1,10 @@
 import { sonnerToast, toast } from '@/lib/toast'
 import { Progress } from '@/components/ui/progress'
 import { Button } from '@/components/ui/button'
-import { SingleItemFileResponse } from '@/types/item-types'
+import { Item, SingleItemFileResponse } from '@/types/item-types'
 import { Loader2 } from 'lucide-react'
+import { getResourceById } from '@/requests/items'
+import { isSingleItemFileResponse } from '@/types/type-guards'
 
 const activeDownloads = new Set<number>()
 const activeControllers = new Map<number, AbortController>()
@@ -18,28 +20,35 @@ const ProgressToast = ({
   fileName,
   onCancel
 }: ProgressToastProps) => (
-  <div className="flex w-full items-start gap-3">
-    <span className="mt-0.5 text-slate-400">
+  <div className="flex w-full items-start gap-4">
+    <div className="mt-1 shrink-0 text-slate-400">
       <Loader2 className="h-5 w-5 animate-spin" />
-    </span>
-    <div className="flex w-full flex-col gap-2">
-      <span className="font-medium text-slate-100">Downloading {fileName}</span>
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-slate-400">{Math.round(progress)}%</span>
+    </div>
+
+    <div className="flex-1 space-y-2">
+      <p className="font-medium text-ellipsis text-slate-100">
+        Downloading {fileName}
+      </p>
+      <div className="flex items-center gap-3">
+        <Progress value={progress} className="h-1.5 flex-1" />
+        <span className="w-10 text-right text-xs text-slate-400">
+          {Math.round(progress)}%
+        </span>
       </div>
-      <Progress value={progress} className="h-1.5" />
-      <Button
-        size="sm"
-        variant="destructive"
-        onClick={onCancel}
-        className="mt-2 h-auto self-start px-2.5 py-1 text-xs"
-      >
-        Cancel
-      </Button>
+
+      <div className="flex justify-end">
+        <Button
+          size="sm"
+          variant="destructive"
+          onClick={onCancel}
+          className="mt-1 px-2.5 py-1 text-xs"
+        >
+          Cancel
+        </Button>
+      </div>
     </div>
   </div>
 )
-
 export const downloadFile = async (file: SingleItemFileResponse) => {
   if (activeDownloads.has(file.id)) {
     toast.info(`Download for "${file.name}" is already in progress.`)
@@ -64,7 +73,8 @@ export const downloadFile = async (file: SingleItemFileResponse) => {
     ),
     {
       duration: Infinity,
-      className: 'border-slate-600/50 bg-slate-800/90 backdrop-blur-sm'
+      className:
+        'w-[400px] py-2 px-4 border-slate-600/50 bg-slate-800/90 backdrop-blur-sm'
     }
   )
 
@@ -140,5 +150,28 @@ export const downloadFile = async (file: SingleItemFileResponse) => {
   } finally {
     activeDownloads.delete(file.id)
     activeControllers.delete(file.id)
+  }
+}
+
+export const startDownloadForItem = async (item: Item) => {
+  if (activeDownloads.has(item.id)) {
+    toast.info(`Download for "${item.name}" is already in progress.`)
+    return
+  }
+
+  const prepToastId = toast.loading(`Preparing to download ${item.name}...`)
+  try {
+    const response = await getResourceById(item.id)
+
+    if (response && isSingleItemFileResponse(response)) {
+      const fileToDownload = response
+      sonnerToast.dismiss(prepToastId)
+      downloadFile(fileToDownload)
+    } else {
+      throw new Error('This item is a folder and cannot be downloaded.')
+    }
+  } catch (error: any) {
+    sonnerToast.dismiss(prepToastId)
+    toast.error(error.message || 'Could not create download link.')
   }
 }

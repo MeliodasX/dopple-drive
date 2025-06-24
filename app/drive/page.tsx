@@ -27,6 +27,7 @@ import { Button } from '@/components/ui/button'
 import {
   Download,
   FileIcon,
+  FilePenLineIcon,
   FileSpreadsheetIcon,
   FileTextIcon,
   FilmIcon,
@@ -34,7 +35,6 @@ import {
   ImageIcon,
   MoreVertical,
   MusicIcon,
-  Share,
   Trash2
 } from 'lucide-react'
 import { formatGoogleDriveDate } from '@/utils/format-google-drive-date'
@@ -43,6 +43,7 @@ import { DriveBreadcrumb } from '@/components/bread-crumb'
 import { getCategoryFromMimeType } from '@/utils/get-category-from-mime-type'
 import { FilePreviewModal } from '@/components/file-preview-modal'
 import { Item } from '@/types/item-types'
+import { startDownloadForItem } from '@/services/download-service'
 
 export default function Home() {
   const { currentDirectoryId, setCurrentDirectoryId } = useDoppleStore(
@@ -203,11 +204,17 @@ export default function Home() {
                             align="end"
                             className="border-slate-700 bg-slate-800"
                           >
+                            {item.mimeType !== FOLDER_MIME_TYPE && (
+                              <DropdownMenuItem
+                                onClick={() => startDownloadForItem(item)}
+                                className="text-slate-100 focus:bg-slate-700"
+                              >
+                                <Download className="mr-2 h-4 w-4" /> Download
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem className="text-slate-100 focus:bg-slate-700">
-                              <Download className="mr-2 h-4 w-4" /> Download
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-slate-100 focus:bg-slate-700">
-                              <Share className="mr-2 h-4 w-4" /> Share
+                              <FilePenLineIcon className="mr-2 h-4 w-4" />{' '}
+                              Rename
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="bg-slate-700" />
                             <DropdownMenuItem className="text-red-400 focus:bg-red-900/50 focus:text-red-400">
@@ -255,11 +262,16 @@ export default function Home() {
                       align="end"
                       className="border-slate-700 bg-slate-800"
                     >
+                      {item.mimeType !== FOLDER_MIME_TYPE && (
+                        <DropdownMenuItem
+                          onClick={() => startDownloadForItem(item)}
+                          className="text-slate-100 focus:bg-slate-700"
+                        >
+                          <Download className="mr-2 h-4 w-4" /> Download
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem className="text-slate-100 focus:bg-slate-700">
-                        <Download className="mr-2 h-4 w-4" /> Download
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="text-slate-100 focus:bg-slate-700">
-                        <Share className="mr-2 h-4 w-4" /> Share
+                        <FilePenLineIcon className="mr-2 h-4 w-4" /> Rename
                       </DropdownMenuItem>
                       <DropdownMenuSeparator className="bg-slate-700" />
                       <DropdownMenuItem className="text-red-400 focus:bg-red-900/50 focus:text-red-400">
