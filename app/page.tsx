@@ -214,8 +214,8 @@ export default async function Home() {
               Simple, transparent pricing
             </h2>
             <p className="mx-auto max-w-2xl text-xl text-slate-400">
-              Choose the plan that's right for you. Upgrade or downgrade at any
-              time.
+              Choose the plan that&#39;s right for you. Upgrade or downgrade at
+              any time.
             </p>
           </div>
 
