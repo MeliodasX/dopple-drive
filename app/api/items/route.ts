@@ -1,181 +1,17 @@
 import { checkAuthStatusOnApi } from '@/utils/check-auth-status-on-api'
 import { errorResponse, successResponse } from '@/utils/response-wrappers'
 import { ErrorCodes, SuccessCodes } from '@/types/errors'
-import { deleteFileFromS3, uploadFileToS3 } from '@/services/aws/s3'
-import {
-  FileInsertPayload,
-  FolderInsertPayload,
-  ItemInsertPayload
-} from '@/types/item-types'
+import { FolderInsertPayload } from '@/types/item-types'
 import { db } from '@/db'
 import { items, ItemsSelectType } from '@/db/schema'
 import { getUserIdFromClerkId } from '@/db/requests/get-user-id-from-clerk-id'
 import { and, asc, eq, InferSelectModel, isNull, sql } from 'drizzle-orm'
 import { FOLDER_MIME_TYPE } from '@/utils/constants'
-import { nanoid } from 'nanoid'
 import { generateNumberedFileName } from '@/utils/generate-numbered-file-name'
 import { NextRequest } from 'next/server'
+import { handleMaterializedPath } from '@/db/requests/handle-materialized-path'
 
 const MAX_RETRIES_ON_NAME_CONFLICT = 100
-
-const handleMaterializedPath = async (
-  parentId: number | null,
-  userId: number,
-  payload: ItemInsertPayload
-) => {
-  let parentPath = '/'
-  if (parentId) {
-    const [parentItem] = await db
-      .select()
-      .from(items)
-      .where(and(eq(items.id, parentId), eq(items.userId, userId)))
-      .limit(1)
-    if (!parentItem) {
-      throw Error('Parent folder not found.')
-    }
-    if (parentItem.mimeType !== FOLDER_MIME_TYPE) {
-      throw Error('Parent item is not a folder.')
-    }
-    parentPath = parentItem.path
-  }
-
-  return await db.transaction(async (trx) => {
-    const [insertedItemPartial] = await trx
-      .insert(items)
-      .values({
-        ...payload,
-        path: ''
-      })
-      .returning({ id: items.id })
-
-    if (!insertedItemPartial) {
-      throw new Error('Failed to insert new item into database.')
-    }
-
-    const fullPath = `${parentPath}${insertedItemPartial.id}/`
-
-    const [finalItem] = await trx
-      .update(items)
-      .set({ path: fullPath })
-      .where(eq(items.id, insertedItemPartial.id))
-      .returning()
-
-    if (!finalItem) {
-      throw new Error('Failed to update item path in database.')
-    }
-
-    return finalItem
-  })
-}
-
-const handleFolderCreation = async (req: Request, userId: number) => {
-  const body = await req.json()
-
-  const { name, mimeType, parentId } = body
-
-  if (!name || typeof name !== 'string') {
-    return errorResponse(ErrorCodes.BAD_REQUEST, 'Folder name is required.')
-  }
-
-  let insert: ItemsSelectType | undefined = undefined
-
-  for (let i = 0; i < MAX_RETRIES_ON_NAME_CONFLICT; i++) {
-    const newName = generateNumberedFileName(name, i)
-    try {
-      const payload: FolderInsertPayload = {
-        userId,
-        name: newName,
-        mimeType,
-        parentId
-      }
-
-      insert = await handleMaterializedPath(parentId, userId, payload)
-      // If the insert is successful, break the loop
-      break
-    } catch (e) {
-      if (e instanceof Error && (e as any).cause?.code === '23505') {
-        insert = undefined
-      } else {
-        let message = 'Unable to create specified folder.'
-        if (e instanceof Error) {
-          message = e.message
-        }
-        return errorResponse(ErrorCodes.INTERNAL_SERVER_ERROR, message)
-      }
-    }
-  }
-
-  if (!insert) {
-    return errorResponse(
-      ErrorCodes.INTERNAL_SERVER_ERROR,
-      `Could not find an available name for folder "${name}" after ${MAX_RETRIES_ON_NAME_CONFLICT} attempts.`
-    )
-  }
-
-  return successResponse(SuccessCodes.CREATED, insert)
-}
-const handleFileCreation = async (req: Request, userId: number) => {
-  const formData = await req.formData()
-
-  const file = formData.get('file')
-
-  if (!file || !(file instanceof File)) {
-    return errorResponse(ErrorCodes.BAD_REQUEST, 'File not found.')
-  }
-
-  const getParentId = formData.get('parentId')
-  const parentId = getParentId ? Number(getParentId) : null
-  const uniqueId = nanoid()
-  const fileName = file.name
-  const mimeType = file.type
-
-  let insert: ItemsSelectType | undefined = undefined
-
-  const key = `${userId}/${uniqueId}-${fileName}`
-  const { url, size } = await uploadFileToS3(file, key)
-
-  for (let i = 0; i < MAX_RETRIES_ON_NAME_CONFLICT; i++) {
-    const newName = generateNumberedFileName(fileName, i)
-    try {
-      const payload: FileInsertPayload = {
-        userId,
-        name: newName,
-        mimeType,
-        parentId,
-        key,
-        fileUrl: url,
-        size
-      }
-      insert = await handleMaterializedPath(parentId, userId, payload)
-      break
-    } catch (e) {
-      if (e instanceof Error && (e as any).cause?.code === '23505') {
-        insert = undefined
-      } else {
-        let message =
-          'Unable to create specified resource due to an unexpected error.'
-        if (e instanceof Error) {
-          message = e.message
-        }
-        try {
-          await deleteFileFromS3(key)
-        } catch (e) {
-          console.error('Unable to delete S3 file')
-        }
-        return errorResponse(ErrorCodes.INTERNAL_SERVER_ERROR, message)
-      }
-    }
-  }
-
-  if (!insert) {
-    return errorResponse(
-      ErrorCodes.INTERNAL_SERVER_ERROR,
-      `Could not find an available name for ${fileName} after ${MAX_RETRIES_ON_NAME_CONFLICT} attempts.`
-    )
-  }
-
-  return successResponse(SuccessCodes.CREATED, insert)
-}
 
 export async function GET(req: NextRequest) {
   await checkAuthStatusOnApi()
@@ -194,7 +30,6 @@ export async function GET(req: NextRequest) {
     ? parseInt(parentIdParam, 10)
     : null
 
-  // Cap page size at 200 for safety
   const pageSize: number = pageSizeParam
     ? Math.min(parseInt(pageSizeParam, 10), 200)
     : 50
@@ -303,16 +138,53 @@ export async function POST(req: Request) {
     )
   }
 
-  if (contentType.startsWith('multipart/form-data')) {
-    return handleFileCreation(req, userId)
+  if (!contentType.startsWith('application/json'))
+    return errorResponse(
+      ErrorCodes.BAD_REQUEST,
+      'Unsupported Content Type Received'
+    )
+
+  const body = await req.json()
+
+  const { name, mimeType, parentId } = body
+
+  if (!name || typeof name !== 'string') {
+    return errorResponse(ErrorCodes.BAD_REQUEST, 'Folder name is required.')
   }
 
-  if (contentType.startsWith('application/json')) {
-    return handleFolderCreation(req, userId)
+  let insert: ItemsSelectType | undefined = undefined
+
+  for (let i = 0; i < MAX_RETRIES_ON_NAME_CONFLICT; i++) {
+    const newName = generateNumberedFileName(name, i)
+    try {
+      const payload: FolderInsertPayload = {
+        userId,
+        name: newName,
+        mimeType,
+        parentId
+      }
+
+      insert = await handleMaterializedPath(parentId, userId, payload)
+      break
+    } catch (e) {
+      if (e instanceof Error && (e as any).cause?.code === '23505') {
+        insert = undefined
+      } else {
+        let message = 'Unable to create specified folder.'
+        if (e instanceof Error) {
+          message = e.message
+        }
+        return errorResponse(ErrorCodes.INTERNAL_SERVER_ERROR, message)
+      }
+    }
   }
 
-  return errorResponse(
-    ErrorCodes.BAD_REQUEST,
-    'Unsupported Content Type Received'
-  )
+  if (!insert) {
+    return errorResponse(
+      ErrorCodes.INTERNAL_SERVER_ERROR,
+      `Could not find an available name for folder "${name}" after ${MAX_RETRIES_ON_NAME_CONFLICT} attempts.`
+    )
+  }
+
+  return successResponse(SuccessCodes.CREATED, insert)
 }

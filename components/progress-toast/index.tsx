@@ -6,12 +6,14 @@ interface ProgressToastProps {
   progress: number
   fileName: string
   onCancel: () => void
+  prefix?: string
 }
 
 export const ProgressToast = ({
   progress,
   fileName,
-  onCancel
+  onCancel,
+  prefix = 'Handling'
 }: ProgressToastProps) => (
   <div className="flex w-full items-start gap-4">
     <div className="mt-1 shrink-0 text-slate-400">
@@ -20,7 +22,7 @@ export const ProgressToast = ({
 
     <div className="flex-1 space-y-2">
       <p className="font-medium text-ellipsis text-slate-100">
-        Downloading {fileName}
+        {prefix} {fileName}
       </p>
       <div className="flex items-center gap-3">
         <Progress value={progress} className="h-1.5 flex-1" />

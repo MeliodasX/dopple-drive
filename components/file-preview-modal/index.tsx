@@ -16,7 +16,7 @@ import { isSingleItemFileResponse } from '@/types/type-guards'
 import { QueryKeys, QueryType } from '@/query/QueryProvider'
 import { SingleItemFileResponse } from '@/types/item-types'
 import { getResourceById } from '@/requests/items'
-import { downloadFile } from '@/services/download-service'
+import { downloadFile } from '@/services/download-manager'
 
 const getFileCategory = (mimeType?: string) => {
   if (!mimeType) return 'unknown'

@@ -27,6 +27,7 @@ export const downloadFile = async (file: SingleItemFileResponse) => {
         progress={0}
         fileName={file.name}
         onCancel={cancelDownload}
+        prefix="Downloading"
       />
     ),
     {
@@ -65,6 +66,7 @@ export const downloadFile = async (file: SingleItemFileResponse) => {
               progress={progress}
               fileName={file.name}
               onCancel={cancelDownload}
+              prefix="Downloading"
             />
           ),
           { id: downloadToastId }
@@ -79,6 +81,7 @@ export const downloadFile = async (file: SingleItemFileResponse) => {
           progress={100}
           fileName={file.name}
           onCancel={() => {}}
+          prefix="Downloading"
         />
       ),
       { id: downloadToastId }

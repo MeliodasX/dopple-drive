@@ -1,6 +1,7 @@
 import {
   DeleteObjectCommand,
   GetObjectCommand,
+  PutObjectCommand,
   S3Client
 } from '@aws-sdk/client-s3'
 import { Upload } from '@aws-sdk/lib-storage'
@@ -65,7 +66,6 @@ export const uploadFileToS3 = async (file: File, key: string) => {
     }
   })
 
-  //TODO: Create a table to save progress to show on the Frontend (if time permits).
   upload.on('httpUploadProgress', (progress) => {
     console.log(progress)
   })
@@ -99,6 +99,18 @@ export const getPreSignedURL = async (key: string) => {
   const command = new GetObjectCommand({
     Bucket: bucket,
     Key: key
+  })
+
+  return await getSignedUrl(s3Client, command, {
+    expiresIn: 3600
+  })
+}
+
+export const putPreSignedURL = async (key: string, fileType: string) => {
+  const command = new PutObjectCommand({
+    Bucket: bucket,
+    Key: key,
+    ContentType: fileType
   })
 
   return await getSignedUrl(s3Client, command, {

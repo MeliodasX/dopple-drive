@@ -4,31 +4,9 @@ import {
   SingleItemFileResponse,
   SingleItemFolderResponse
 } from '@/types/item-types'
-import { doDelete, doGet, doPatch, doPost, doPostFormData } from '@/requests'
+import { doDelete, doGet, doPatch, doPost } from '@/requests'
 import { FOLDER_MIME_TYPE } from '@/utils/constants'
 import { QueryFunctionContext } from '@tanstack/react-query'
-
-export const createFile = async (
-  file: File,
-  parentId?: number | null
-): Promise<Item> => {
-  const formData = new FormData()
-  formData.append('file', file)
-
-  if (parentId) {
-    formData.append('parentId', `${parentId}`)
-  }
-
-  const response = await doPostFormData(`/items`, formData)
-
-  if (!response.ok) {
-    const errorData = await response.json()
-    throw Error(errorData)
-  }
-
-  const json = await response.json()
-  return json.data
-}
 
 export const createFolder = async (
   name: string,

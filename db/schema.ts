@@ -11,6 +11,7 @@ import {
 } from 'drizzle-orm/pg-core'
 import { timestamps } from '@/db/helpers/timestamps'
 import { InferSelectModel, relations, sql } from 'drizzle-orm'
+import { DEFAULT_FILE_MIME_TYPE } from '@/utils/constants'
 
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
@@ -31,7 +32,7 @@ export const items = pgTable(
     fileUrl: text('file_url'),
     size: bigint('size', { mode: 'number' }),
     key: text('key'),
-    mimeType: text('mime_type').notNull().default('application/octet-stream'),
+    mimeType: text('mime_type').notNull().default(DEFAULT_FILE_MIME_TYPE),
     parentId: integer('parent_id').references((): AnyPgColumn => items.id, {
       onDelete: 'cascade'
     }),

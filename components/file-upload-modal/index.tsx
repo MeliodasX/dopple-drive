@@ -1,12 +1,17 @@
-import type React from 'react'
-import { useRef, useState } from 'react'
+'use client'
+
+import { DragEvent, useRef, useState } from 'react'
 import { File, Upload, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Modal, ModalBody, ModalFooter } from '@/components/modal'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { createFile } from '@/requests/items'
-import { toast } from '@/lib/toast'
 import { useDoppleStore } from '@/providers/dopple-store-provider'
+import { uploadFiles } from '@/services/upload-manager'
+import { useQueryClient } from '@tanstack/react-query'
+import { toast } from '@/lib/toast'
+import { formatGoogleDriveFileSize } from '@/utils/format-google-drive-file-size'
+
+const MAX_FILE_SIZE_MB = 100
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
 
 interface FileUploadModalProps {
   isOpen: boolean
@@ -19,28 +24,23 @@ export const FileUploadModal = ({ isOpen, onClose }: FileUploadModalProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const { currentDirectoryId } = useDoppleStore((state) => state)
-
   const queryClient = useQueryClient()
-  const { mutate, isPending: isUploading } = useMutation({
-    mutationFn: (fileToUpload: File) =>
-      createFile(fileToUpload, currentDirectoryId),
-    onSuccess: () => {
-      toast.success('Successful', {
-        duration: 2000,
-        description: 'File added successfully.'
-      })
-      queryClient.invalidateQueries({ queryKey: ['items', currentDirectoryId] })
-      handleClose()
-    },
-    onError: (error) => {
-      toast.error('Failed', {
-        duration: 3000,
-        description: 'Unable to add file.'
-      })
-    }
-  })
 
-  const handleDrag = (e: React.DragEvent) => {
+  const processFiles = (files: File[]) => {
+    const validFiles: File[] = []
+    for (const file of files) {
+      if (file.size > MAX_FILE_SIZE_BYTES) {
+        toast.error(`"${file.name}" is too large.`, {
+          description: `File size cannot exceed ${MAX_FILE_SIZE_MB} MB.`
+        })
+        continue
+      }
+      validFiles.push(file)
+    }
+    setSelectedFiles((prev) => [...prev, ...validFiles])
+  }
+
+  const handleDrag = (e: DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
     if (e.type === 'dragenter' || e.type === 'dragover') {
@@ -50,18 +50,39 @@ export const FileUploadModal = ({ isOpen, onClose }: FileUploadModalProps) => {
     }
   }
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = (e: DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
     setDragActive(false)
-    if (e.dataTransfer.files) {
-      setSelectedFiles(Array.from(e.dataTransfer.files))
+
+    const droppedItems = Array.from(e.dataTransfer.items)
+    const validFiles: File[] = []
+
+    for (const item of droppedItems) {
+      const entry = item.webkitGetAsEntry()
+      if (entry?.isDirectory) {
+        toast.error('Folder uploads are not supported.', {
+          description: 'Please select individual files instead.'
+        })
+        continue
+      }
+      const file = item.getAsFile()
+      if (file) {
+        validFiles.push(file)
+      }
+    }
+
+    if (validFiles.length > 0) {
+      processFiles(validFiles)
     }
   }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setSelectedFiles(Array.from(e.target.files))
+      processFiles(Array.from(e.target.files))
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
     }
   }
 
@@ -70,23 +91,14 @@ export const FileUploadModal = ({ isOpen, onClose }: FileUploadModalProps) => {
   }
 
   const handleSubmit = () => {
-    if (selectedFiles.length === 0 || isUploading) return
-    mutate(selectedFiles[0])
+    if (selectedFiles.length === 0) return
+    uploadFiles(selectedFiles, currentDirectoryId, queryClient)
+    handleClose()
   }
 
   const handleClose = () => {
     setSelectedFiles([])
     onClose()
-  }
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes'
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return (
-      Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-    )
   }
 
   return (
@@ -116,7 +128,8 @@ export const FileUploadModal = ({ isOpen, onClose }: FileUploadModalProps) => {
                 Drop files here or click to browse
               </h3>
               <p className="text-slate-400">
-                Select multiple files to upload to your drive
+                Max file size: {MAX_FILE_SIZE_MB} MB. Folders cannot be
+                uploaded.
               </p>
             </div>
             <Button
@@ -148,7 +161,7 @@ export const FileUploadModal = ({ isOpen, onClose }: FileUploadModalProps) => {
                         {file.name}
                       </p>
                       <p className="text-xs text-slate-400">
-                        {formatFileSize(file.size)}
+                        {formatGoogleDriveFileSize(file.size)}
                       </p>
                     </div>
                   </div>
@@ -171,19 +184,16 @@ export const FileUploadModal = ({ isOpen, onClose }: FileUploadModalProps) => {
         <Button
           variant="ghost"
           onClick={handleClose}
-          disabled={isUploading}
           className="text-slate-400 hover:bg-slate-800 hover:text-slate-100"
         >
           Cancel
         </Button>
         <Button
           onClick={handleSubmit}
-          disabled={selectedFiles.length === 0 || isUploading}
+          disabled={selectedFiles.length === 0}
           className="bg-blue-600 text-white hover:bg-blue-500"
         >
-          {isUploading
-            ? 'Uploading...'
-            : `Upload ${selectedFiles.length} File${selectedFiles.length !== 1 ? 's' : ''}`}
+          {`Upload ${selectedFiles.length} File${selectedFiles.length !== 1 ? 's' : ''}`}
         </Button>
       </ModalFooter>
     </Modal>
