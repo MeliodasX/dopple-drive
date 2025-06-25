@@ -27,7 +27,6 @@ export function SimpleDeleteDialog({
   onClose,
   item
 }: SimpleDeleteDialogProps) {
-  // Get the query client and current folder ID for invalidation
   const queryClient = useQueryClient()
   const { currentDirectoryId } = useDoppleStore((state) => state)
 

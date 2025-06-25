@@ -120,12 +120,13 @@ export function SearchBar({ onFolderSelect, onFileSelect }: SearchBarProps) {
   }
 
   const handleBlur = () => {
-    setTimeout(() => setIsOpen(false), 200)
+    setIsOpen(false)
   }
 
   const handleResultClick = (result: Item) => {
     setIsOpen(false)
     setSearchTerm('')
+    inputRef?.current?.blur()
     if (result.mimeType === FOLDER_MIME_TYPE) {
       onFolderSelect(result.id)
     } else {
