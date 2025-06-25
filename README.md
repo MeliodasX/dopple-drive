@@ -1,36 +1,127 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<h1 align="center">
+    Dopple Drive - A Modern Google Drive Clone
+</h1>
 
-## Getting Started
+<p align="center">
+    ![Dopple Drive Logo](readme/dopple-drive.svg)
+</p>
 
-First, run the development server:
+<p align="center">
+  A feature-rich, scalable, and performant clone of Google Drive built with a modern, production-grade tech stack.
+</p>
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+---
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## ✨ Features
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+This project goes beyond a simple clone, implementing robust, real-world architectural patterns for a seamless and
+scalable user experience.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Core Functionality
 
-## Learn More
+* **🔐 Secure User Authentication:** Full sign-up, sign-in, and session management powered by Clerk.
+* **🗂️ Complete File & Folder Management:**
+    * Create, rename, move, and delete files and folders.
+    * Automatic conflict resolution: creating a file or folder with a duplicate name automatically appends a number (
+      e.g., `report (1).pdf`), preventing accidental overwrites.
+* **⚡ Blazing-Fast Navigation:**
+    * **Infinite Scrolling:** Effortlessly browse through hundreds or thousands of files and folders without pagination
+      clicks.
+    * **Lazy-Loaded Tree View:** The "Move to" modal features a highly performant folder tree that loads nested content
+      on demand.
+    * **Smart Collapsible Breadcrumbs:** An intuitive breadcrumb system for both desktop and mobile that elegantly
+      collapses long paths to keep the UI clean.
+* **🚀 Advanced Upload/Download System:**
+    * **Direct-to-S3 Uploads:** Files are uploaded directly to S3, bypassing server limitations. This allows for uploads
+      larger than the typical 4.5MB serverless function limit.
+    * **Background Processing:** Start an upload or download and continue browsing. The process runs independently of
+      any single component or modal.
+    * **Real-time Progress Toasts:** Application-wide toasts (powered by Sonner) show the real-time progress of every
+      concurrent upload and download.
+    * **Cancellable Actions:** Users can cancel any in-progress upload or download directly from the toast notification.
+* **📄 Rich File Previews:** An immersive, full-screen preview modal for common file types, including images, videos,
+  audio, and PDFs.
+* **📱 Fully Responsive UI:** A clean and modern interface built with Tailwind CSS and ShadCN UI that provides a seamless
+  experience from mobile to desktop.
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🛠️ Tech Stack
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+* **Framework:** Next.js (App Router)
+* **Language:** TypeScript
+* **Backend:** Next.js API Routes
+* **Database:** PostgreSQL with Drizzle ORM
+* **File Storage:** AWS S3
+* **Authentication:** Clerk
+* **UI:** Tailwind CSS, ShadCN UI
+* **State Management:**
+    * **Zustand** for minimal global state (e.g., current directory).
+    * **TanStack Query (React Query)** for all server state management, caching, and mutations.
+* **UI Components:** `lucide-react` for icons, `sonner` for toasts.
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🏗️ Key Architectural Decisions & Highlights
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This project was built with scalability and performance as top priorities.
+
+1. **Direct-to-S3 Uploads via Pre-signed URLs:** To overcome serverless function payload limits (~4.5MB), the
+   application uses a secure, three-step process for uploads. The client requests a pre-signed URL from the backend,
+   uploads the file directly to S3, and then notifies the backend upon completion. This is a production-grade pattern
+   for handling large file uploads efficiently.
+
+2. **Cursor-Based Pagination:** Instead of traditional offset-based pagination which degrades in performance on large
+   datasets, all file/folder lists use cursor-based pagination. This ensures that fetching data remains fast and
+   efficient, no matter how many items a user has.
+
+3. **Materialized Path for Hierarchy:** The database stores a materialized `path` for every item. This allows for
+   extremely efficient hierarchical operations, such as soft-deleting a folder and all of its thousands of descendants
+   in a single, fast database query.
+
+4. **Decoupled Background Services:** All upload and download logic is handled by standalone "services" that are
+   decoupled from the UI. This allows these long-running tasks to continue in the background, independent of component
+   lifecycles, providing a smoother user experience.
+
+---
+
+## 🛑 Limitations & Future Work
+
+* **Upload Size Limit:** While the architecture supports large files, a client-side limit of **100 MB** per file is
+  currently enforced to save S3 storage costs (S3 Free Tier only allows 5 GB).
+* **Folder Uploads:** The UI currently does not support uploading entire folders via drag-and-drop; users must select
+  the files within the folder.
+* **Sharing:** File and folder sharing functionality is not yet implemented.
+* **Trash/Restore:** While items are soft-deleted on the backend, the UI for a "Trash" can and restoring items has not
+  been built.
+
+---
+
+## 🚀 Getting Started
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/your-username/dopple-drive.git
+   cd dopple-drive
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   yarn install
+   ```
+
+3. **Set up environment variables:**
+    * Create a `.env.local` file by copying the `.env.example` file.
+    * Fill in the required credentials for your database, AWS S3, and Clerk.
+
+4. **Run database migrations:**
+   ```bash
+   npm run db:push
+   ```
+
+5. **Start the development server:**
+   ```bash
+   npm run dev
+   ```
+
+Visit [here](https://dopple.meliodasx.com) to see the application in action!
