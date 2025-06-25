@@ -20,7 +20,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: 'Dopple Drive',
-  description: 'Something cool that accentuates Dopple Drive'
+  description:
+    "Give your files the home they deserve. Dopple Drive is a modern, secure cloud storage solution where you can upload, organize, and preview your most important documents with a clean, fast interface. It's your digital life, decluttered"
 }
 
 export default function RootLayout({
