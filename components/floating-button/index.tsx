@@ -13,10 +13,12 @@ export const FloatingButton = () => {
 
   const onCreateFolderModalClose = () => {
     setCreateFolderOpen(false)
+    setMenuOpen(false)
   }
 
   const onCreateFileModalClose = () => {
     setCreateFileOpen(false)
+    setMenuOpen(false)
   }
 
   return (

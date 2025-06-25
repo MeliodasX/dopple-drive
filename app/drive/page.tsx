@@ -286,7 +286,7 @@ export default function Home() {
             {sortedItems.map((item) => (
               <div
                 key={item.id}
-                onClick={() => () => {
+                onClick={() => {
                   handleItemClick(item)
                 }}
                 className="rounded-lg border border-slate-800 bg-slate-900/30 p-4 transition-colors hover:bg-slate-800/30"
