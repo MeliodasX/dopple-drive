@@ -6,7 +6,6 @@ import { Modal, ModalBody, ModalFooter } from '@/components/modal'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createFile } from '@/requests/items'
 import { toast } from '@/lib/toast'
-import { UploadMode } from '@/types/item-types'
 import { useDoppleStore } from '@/providers/dopple-store-provider'
 
 interface FileUploadModalProps {
@@ -24,7 +23,7 @@ export const FileUploadModal = ({ isOpen, onClose }: FileUploadModalProps) => {
   const queryClient = useQueryClient()
   const { mutate, isPending: isUploading } = useMutation({
     mutationFn: (fileToUpload: File) =>
-      createFile(fileToUpload, UploadMode.COPY, currentDirectoryId),
+      createFile(fileToUpload, currentDirectoryId),
     onSuccess: () => {
       toast.success('Successful', {
         duration: 2000,

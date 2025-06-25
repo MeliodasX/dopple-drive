@@ -1,8 +1,3 @@
-export enum UploadMode {
-  OVERRIDE = 'OVERRIDE',
-  COPY = 'COPY'
-}
-
 export interface BaseItemInsertPayload {
   mimeType: string
   userId: number

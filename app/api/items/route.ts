@@ -5,17 +5,18 @@ import { deleteFileFromS3, uploadFileToS3 } from '@/services/aws/s3'
 import {
   FileInsertPayload,
   FolderInsertPayload,
-  ItemInsertPayload,
-  UploadMode
+  ItemInsertPayload
 } from '@/types/item-types'
 import { db } from '@/db'
 import { items, ItemsSelectType } from '@/db/schema'
 import { getUserIdFromClerkId } from '@/db/requests/get-user-id-from-clerk-id'
-import { and, asc, eq, InferSelectModel, isNull, not, sql } from 'drizzle-orm'
+import { and, asc, eq, InferSelectModel, isNull, sql } from 'drizzle-orm'
 import { FOLDER_MIME_TYPE } from '@/utils/constants'
 import { nanoid } from 'nanoid'
 import { generateNumberedFileName } from '@/utils/generate-numbered-file-name'
 import { NextRequest } from 'next/server'
+
+const MAX_RETRIES_ON_NAME_CONFLICT = 100
 
 const handleMaterializedPath = async (
   parentId: number | null,
@@ -76,28 +77,43 @@ const handleFolderCreation = async (req: Request, userId: number) => {
     return errorResponse(ErrorCodes.BAD_REQUEST, 'Folder name is required.')
   }
 
-  let data: ItemsSelectType
+  let insert: ItemsSelectType | undefined = undefined
 
-  try {
-    const payload: FolderInsertPayload = {
-      userId,
-      name,
-      mimeType,
-      parentId
-    }
+  for (let i = 0; i < MAX_RETRIES_ON_NAME_CONFLICT; i++) {
+    const newName = generateNumberedFileName(name, i)
+    try {
+      const payload: FolderInsertPayload = {
+        userId,
+        name: newName,
+        mimeType,
+        parentId
+      }
 
-    data = await handleMaterializedPath(parentId, userId, payload)
-  } catch (e) {
-    let message = 'Unable to create specified resource'
-    if (e instanceof Error) {
-      message = e.message
+      insert = await handleMaterializedPath(parentId, userId, payload)
+      // If the insert is successful, break the loop
+      break
+    } catch (e) {
+      if (e instanceof Error && (e as any).cause?.code === '23505') {
+        insert = undefined
+      } else {
+        let message = 'Unable to create specified folder.'
+        if (e instanceof Error) {
+          message = e.message
+        }
+        return errorResponse(ErrorCodes.INTERNAL_SERVER_ERROR, message)
+      }
     }
-    return errorResponse(ErrorCodes.INTERNAL_SERVER_ERROR, message)
   }
 
-  return successResponse(SuccessCodes.ACCEPTED, data)
-}
+  if (!insert) {
+    return errorResponse(
+      ErrorCodes.INTERNAL_SERVER_ERROR,
+      `Could not find an available name for folder "${name}" after ${MAX_RETRIES_ON_NAME_CONFLICT} attempts.`
+    )
+  }
 
+  return successResponse(SuccessCodes.CREATED, insert)
+}
 const handleFileCreation = async (req: Request, userId: number) => {
   const formData = await req.formData()
 
@@ -107,8 +123,6 @@ const handleFileCreation = async (req: Request, userId: number) => {
     return errorResponse(ErrorCodes.BAD_REQUEST, 'File not found.')
   }
 
-  // Defaults to creating a copy of the file unless override is explicitly stated
-  const mode = (formData.get('mode') ?? UploadMode.COPY) as UploadMode
   const getParentId = formData.get('parentId')
   const parentId = getParentId ? Number(getParentId) : null
   const uniqueId = nanoid()
@@ -117,113 +131,47 @@ const handleFileCreation = async (req: Request, userId: number) => {
 
   let insert: ItemsSelectType | undefined = undefined
 
-  if (mode === UploadMode.COPY) {
-    const MAX_RETRIES = 100 // Safety break to prevent infinite loops
+  const key = `${userId}/${uniqueId}-${fileName}`
+  const { url, size } = await uploadFileToS3(file, key)
 
-    const key = `${userId}/${uniqueId}-${fileName}`
-    const { url, size } = await uploadFileToS3(file, key)
-
-    for (let i = 0; i < MAX_RETRIES; i++) {
-      const newName = generateNumberedFileName(fileName, i)
-      try {
-        const payload: FileInsertPayload = {
-          userId,
-          name: newName,
-          mimeType,
-          parentId,
-          key,
-          fileUrl: url,
-          size
-        }
-        insert = await handleMaterializedPath(parentId, userId, payload)
-        break
-      } catch (e) {
-        if (e instanceof Error && (e as any).cause?.code === '23505') {
-          console.log(`Conflict for name: ${newName}. Retrying...`)
-          insert = undefined
-        } else {
-          let message =
-            'Unable to create specified resource due to an unexpected error.'
-          if (e instanceof Error) {
-            message = e.message
-          }
-          try {
-            await deleteFileFromS3(key)
-          } catch (e) {
-            console.error('Unable to delete S3 file')
-          }
-          return errorResponse(ErrorCodes.INTERNAL_SERVER_ERROR, message)
-        }
+  for (let i = 0; i < MAX_RETRIES_ON_NAME_CONFLICT; i++) {
+    const newName = generateNumberedFileName(fileName, i)
+    try {
+      const payload: FileInsertPayload = {
+        userId,
+        name: newName,
+        mimeType,
+        parentId,
+        key,
+        fileUrl: url,
+        size
       }
-    }
-
-    if (!insert) {
-      return errorResponse(
-        ErrorCodes.INTERNAL_SERVER_ERROR,
-        `Could not find an available name for ${fileName} after ${MAX_RETRIES} attempts.`
-      )
+      insert = await handleMaterializedPath(parentId, userId, payload)
+      break
+    } catch (e) {
+      if (e instanceof Error && (e as any).cause?.code === '23505') {
+        insert = undefined
+      } else {
+        let message =
+          'Unable to create specified resource due to an unexpected error.'
+        if (e instanceof Error) {
+          message = e.message
+        }
+        try {
+          await deleteFileFromS3(key)
+        } catch (e) {
+          console.error('Unable to delete S3 file')
+        }
+        return errorResponse(ErrorCodes.INTERNAL_SERVER_ERROR, message)
+      }
     }
   }
-  if (mode === UploadMode.OVERRIDE) {
-    const [result] = await db
-      .select()
-      .from(items)
-      .where(
-        and(
-          eq(items.userId, userId),
-          eq(items.name, fileName),
-          not(eq(items.mimeType, FOLDER_MIME_TYPE)),
-          parentId === null
-            ? isNull(items.parentId)
-            : eq(items.parentId, parentId)
-        )
-      )
 
-    if (result) {
-      if (!result.key)
-        return errorResponse(
-          ErrorCodes.INTERNAL_SERVER_ERROR,
-          'Malformed entry encountered! Existing item is missing S3 key.'
-        )
-
-      const key = result.key
-      const { size } = await uploadFileToS3(file, key)
-
-      const [data] = await db
-        .update(items)
-        .set({
-          mimeType,
-          size,
-          updatedAt: new Date()
-        })
-        .where(eq(items.id, result.id))
-        .returning()
-
-      return successResponse(SuccessCodes.CREATED, data)
-    }
-
-    const key = `${userId}/${uniqueId}-${fileName}`
-    const { url, size } = await uploadFileToS3(file, key)
-
-    const payload: FileInsertPayload = {
-      userId,
-      name: fileName,
-      mimeType,
-      parentId,
-      key,
-      fileUrl: url,
-      size
-    }
-
-    try {
-      insert = await handleMaterializedPath(parentId, userId, payload)
-    } catch (e) {
-      let message = 'Unable to create specified resource'
-      if (e instanceof Error) {
-        message = e.message
-      }
-      return errorResponse(ErrorCodes.INTERNAL_SERVER_ERROR, message)
-    }
+  if (!insert) {
+    return errorResponse(
+      ErrorCodes.INTERNAL_SERVER_ERROR,
+      `Could not find an available name for ${fileName} after ${MAX_RETRIES_ON_NAME_CONFLICT} attempts.`
+    )
   }
 
   return successResponse(SuccessCodes.CREATED, insert)
@@ -332,7 +280,6 @@ export async function GET(req: NextRequest) {
       hasMore: hasNextPage
     })
   } catch (err: any) {
-    console.error('Error fetching items list:', err)
     return errorResponse(
       ErrorCodes.INTERNAL_SERVER_ERROR,
       `Failed to list items: ${err.message || 'Unknown error'}`

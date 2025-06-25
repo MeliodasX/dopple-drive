@@ -2,8 +2,7 @@ import {
   Item,
   PaginatedItemsResponse,
   SingleItemFileResponse,
-  SingleItemFolderResponse,
-  UploadMode
+  SingleItemFolderResponse
 } from '@/types/item-types'
 import { doDelete, doGet, doPatch, doPost, doPostFormData } from '@/requests'
 import { FOLDER_MIME_TYPE } from '@/utils/constants'
@@ -11,15 +10,10 @@ import { QueryFunctionContext } from '@tanstack/react-query'
 
 export const createFile = async (
   file: File,
-  mode?: UploadMode,
   parentId?: number | null
 ): Promise<Item> => {
   const formData = new FormData()
   formData.append('file', file)
-
-  if (mode) {
-    formData.append('mode', mode)
-  }
 
   if (parentId) {
     formData.append('parentId', `${parentId}`)

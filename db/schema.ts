@@ -11,7 +11,6 @@ import {
 } from 'drizzle-orm/pg-core'
 import { timestamps } from '@/db/helpers/timestamps'
 import { InferSelectModel, relations, sql } from 'drizzle-orm'
-import { FOLDER_MIME_TYPE } from '@/utils/constants'
 
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
@@ -53,9 +52,17 @@ export const items = pgTable(
       ),
       parentIdIdx: index('items_parent_id_idx').on(table.parentId),
       nameIdx: index('items_name_idx').on(table.name),
-      namePerFolderPerUserUnique: uniqueIndex('items_name_parent_user_file_idx')
-        .on(table.userId, table.parentId, table.name)
-        .where(sql.raw(`mime_type != '${FOLDER_MIME_TYPE}'`))
+      uniqueNameInFolder: uniqueIndex('unique_name_in_folder_idx').on(
+        table.userId,
+        table.parentId,
+        table.name
+      ).where(sql`${table.parentId}
+            IS NOT NULL`),
+      uniqueNameInRoot: uniqueIndex('unique_name_in_root_idx').on(
+        table.userId,
+        table.name
+      ).where(sql`${table.parentId}
+            IS NULL`)
     }
   }
 )

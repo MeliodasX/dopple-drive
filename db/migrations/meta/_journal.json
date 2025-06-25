@@ -64,6 +64,13 @@
       "when": 1750700574954,
       "tag": "0008_secret_boom_boom",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1750813548201,
+      "tag": "0009_sour_gideon",
+      "breakpoints": true
     }
   ]
 }
