@@ -58,3 +58,10 @@ export interface BreadcrumbItem {
   id: number | null
   name: string
 }
+
+export interface MoveItem {
+  id: number
+  name: string
+  mimeType: string
+  parentId?: number | null
+}

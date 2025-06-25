@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import {
+  ArrowRightIcon,
   Download,
   FileIcon,
   FilePenLineIcon,
@@ -46,6 +47,8 @@ import { Item } from '@/types/item-types'
 import { startDownloadForItem } from '@/services/download-service'
 import { RenameModal } from '@/components/rename-model'
 import { SimpleDeleteDialog } from '@/components/delete-dialog'
+import { MoveModal } from '@/components/move-modal'
+import { QueryKeys } from '@/query/QueryProvider'
 
 export default function Home() {
   const { currentDirectoryId, setCurrentDirectoryId } = useDoppleStore(
@@ -56,6 +59,7 @@ export default function Home() {
     useState<boolean>(false)
   const [openRenameModal, setOpenRenameModal] = useState<boolean>(false)
   const [openDeleteModal, setOpenDeleteModal] = useState<boolean>(false)
+  const [openMoveModal, setOpenMoveModal] = useState<boolean>(false)
 
   const {
     data,
@@ -66,7 +70,7 @@ export default function Home() {
     isFetchingNextPage,
     status
   } = useInfiniteQuery({
-    queryKey: ['items', currentDirectoryId],
+    queryKey: [QueryKeys.ITEMS, currentDirectoryId],
     queryFn: getItems,
     getNextPageParam: (lastPage) => lastPage.nextPageToken,
     initialPageParam: null
@@ -94,6 +98,11 @@ export default function Home() {
   const handleDeleteClick = (item: Item) => {
     setSelectedItem(item)
     setOpenDeleteModal(true)
+  }
+
+  const handleMoveClick = (item: Item) => {
+    setSelectedItem(item)
+    setOpenMoveModal(true)
   }
 
   const getFileIcon = (type: string) => {
@@ -152,6 +161,11 @@ export default function Home() {
         isOpen={openRenameModal}
         onClose={() => setOpenRenameModal(false)}
         item={selectedItem}
+      />
+      <MoveModal
+        isOpen={openMoveModal}
+        onClose={() => setOpenMoveModal(false)}
+        itemToMove={selectedItem}
       />
       <SimpleDeleteDialog
         isOpen={openDeleteModal}
@@ -244,6 +258,13 @@ export default function Home() {
                               <FilePenLineIcon className="mr-2 h-4 w-4" />{' '}
                               Rename
                             </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-slate-100 hover:bg-slate-700"
+                              onClick={() => handleMoveClick(item)}
+                            >
+                              <ArrowRightIcon className="mr-2 h-4 w-4" />
+                              Move
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator className="bg-slate-700" />
                             <DropdownMenuItem
                               onClick={() => handleDeleteClick(item)}
@@ -306,6 +327,13 @@ export default function Home() {
                         className="text-slate-100 focus:bg-slate-700"
                       >
                         <FilePenLineIcon className="mr-2 h-4 w-4" /> Rename
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-slate-100 hover:bg-slate-700"
+                        onClick={() => handleMoveClick(item)}
+                      >
+                        <ArrowRightIcon className="mr-2 h-4 w-4" />
+                        Move
                       </DropdownMenuItem>
                       <DropdownMenuSeparator className="bg-slate-700" />
                       <DropdownMenuItem
