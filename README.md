@@ -3,7 +3,7 @@
 </h1>
 
 <p align="center">
-    ![Dopple Drive Logo](readme/dopple-drive.svg)
+    <img src="./readme/dopple-drive.svg">
 </p>
 
 <p align="center">
