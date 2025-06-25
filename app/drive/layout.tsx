@@ -2,6 +2,7 @@ import { ReactNode } from 'react'
 import { AppHeader } from '@/components/app-header'
 import { FloatingButton } from '@/components/floating-button'
 import { auth } from '@clerk/nextjs/server'
+import { GlobalDropzone } from '@/components/global-drop-zone'
 
 export default async function DriveLayout({
   children
@@ -14,6 +15,7 @@ export default async function DriveLayout({
     <main className="min-h-screen w-full bg-slate-950 text-slate-100">
       <AppHeader userId={userId} />
       <FloatingButton />
+      <GlobalDropzone />
       {children}
     </main>
   )
