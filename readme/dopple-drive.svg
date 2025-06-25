@@ -1,23 +1,13 @@
-<svg width="200" height="36" viewBox="0 0 160 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <g transform="translate(2, 2)">
-        <path
-                d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"
-                fill="#3b82f6"
-                stroke="#3b82f6"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                transform="translate(4, 4) scale(1)"
-        />
-    </g>
-    <text
-            x="44"
-            y="24"
-            font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
-            font-size="20"
-            font-weight="600"
-            fill="#f1f5f9"
-    >
-        Dopple Drive
-    </text>
+<svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="32"
+        height="32"
+        viewBox="0 0 24 24"
+        fill="#3b82f6"
+        stroke="#3b82f6"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+>
+  <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
 </svg>

@@ -1,10 +1,6 @@
 <h1 align="center">
-    Dopple Drive - A Modern Google Drive Clone
+    <img align="center" src="./readme/dopple-drive.svg"> Dopple Drive - A Modern Google Drive Clone
 </h1>
-
-<p align="center">
-    <img src="./readme/dopple-drive.svg">
-</p>
 
 <p align="center">
   A feature-rich, scalable, and performant clone of Google Drive built with a modern, production-grade tech stack.
