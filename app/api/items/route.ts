@@ -5,7 +5,7 @@ import { FolderInsertPayload } from '@/types/item-types'
 import { db } from '@/db'
 import { items, ItemsSelectType } from '@/db/schema'
 import { getUserIdFromClerkId } from '@/db/requests/get-user-id-from-clerk-id'
-import { and, asc, eq, InferSelectModel, isNull, sql } from 'drizzle-orm'
+import { and, asc, eq, InferSelectModel, isNull, SQL, sql } from 'drizzle-orm'
 import { FOLDER_MIME_TYPE } from '@/utils/constants'
 import { generateNumberedFileName } from '@/utils/generate-numbered-file-name'
 import { NextRequest } from 'next/server'
@@ -14,80 +14,104 @@ import { handleMaterializedPath } from '@/db/requests/handle-materialized-path'
 const MAX_RETRIES_ON_NAME_CONFLICT = 100
 
 export async function GET(req: NextRequest) {
-  await checkAuthStatusOnApi()
-  const userId = await getUserIdFromClerkId()
+  try {
+    await checkAuthStatusOnApi()
+    const userId = await getUserIdFromClerkId()
 
-  if (!userId) {
-    return errorResponse(ErrorCodes.FORBIDDEN, "Couldn't find user")
-  }
+    if (!userId) {
+      return errorResponse(ErrorCodes.FORBIDDEN, "Couldn't find user")
+    }
 
-  const searchParams = req.nextUrl.searchParams
-  const parentIdParam = searchParams.get('parentId')
-  const pageSizeParam = searchParams.get('pageSize')
-  const pageTokenParam = searchParams.get('pageToken')
+    const searchParams = req.nextUrl.searchParams
+    const parentIdParam = searchParams.get('parentId')
+    const pageSizeParam = searchParams.get('pageSize')
+    const pageTokenParam = searchParams.get('pageToken')
 
-  const targetParentId: number | null = parentIdParam
-    ? parseInt(parentIdParam, 10)
-    : null
+    const targetParentId: number | null = parentIdParam
+      ? parseInt(parentIdParam, 10)
+      : null
 
-  const pageSize: number = pageSizeParam
-    ? Math.min(parseInt(pageSizeParam, 10), 200)
-    : 50
+    const pageSize: number = pageSizeParam
+      ? Math.min(parseInt(pageSizeParam, 10), 200)
+      : 50
 
-  let pageTokenCursor: { mimeType: string; name: string; id: number } | null =
-    null
+    let pageTokenCursor: { mimeType: string; name: string; id: number } | null =
+      null
 
-  if (pageTokenParam) {
-    try {
-      const decodedToken = Buffer.from(pageTokenParam, 'base64').toString(
-        'ascii'
-      )
-      pageTokenCursor = JSON.parse(decodedToken)
-      if (
-        pageTokenCursor &&
-        (typeof pageTokenCursor.mimeType !== 'string' ||
-          typeof pageTokenCursor.name !== 'string' ||
-          typeof pageTokenCursor.id !== 'number')
-      ) {
+    if (pageTokenParam) {
+      try {
+        const decodedToken = Buffer.from(pageTokenParam, 'base64').toString(
+          'ascii'
+        )
+        pageTokenCursor = JSON.parse(decodedToken)
+        if (
+          pageTokenCursor &&
+          (typeof pageTokenCursor.mimeType !== 'string' ||
+            typeof pageTokenCursor.name !== 'string' ||
+            typeof pageTokenCursor.id !== 'number')
+        ) {
+          pageTokenCursor = null
+        }
+      } catch (e) {
+        console.warn('Malformed pageToken received:', pageTokenParam)
         pageTokenCursor = null
       }
-    } catch (e) {
-      console.warn('Malformed pageToken received:', pageTokenParam)
-      pageTokenCursor = null
     }
-  }
 
-  try {
-    const baseWhereClause = and(
+    const conditions: (SQL | undefined)[] = [
       eq(items.userId, userId),
-      targetParentId === null
-        ? isNull(items.parentId)
-        : eq(items.parentId, targetParentId),
       isNull(items.deletedAt)
-    )
+    ]
 
-    const mimeTypeSortExpression = sql`CASE WHEN ${items.mimeType} = ${FOLDER_MIME_TYPE} THEN 0 ELSE 1 END`
+    if (targetParentId === null) {
+      conditions.push(isNull(items.parentId))
+    } else {
+      conditions.push(eq(items.parentId, targetParentId))
+    }
 
-    let cursorCondition = sql`TRUE`
     if (pageTokenCursor) {
+      const mimeTypeSortExpression = sql`CASE WHEN
+      ${items.mimeType}
+      =
+      ${FOLDER_MIME_TYPE}
+      THEN
+      0
+      ELSE
+      1
+      END`
       const pageTokenCursorMimeTypeSortValue = sql`CASE WHEN ${pageTokenCursor.mimeType} = ${FOLDER_MIME_TYPE} THEN 0 ELSE 1 END`
 
-      cursorCondition = sql`
-        (${mimeTypeSortExpression} > ${pageTokenCursorMimeTypeSortValue})
-        OR
-        (${mimeTypeSortExpression} = ${pageTokenCursorMimeTypeSortValue} AND ${items.name} > ${pageTokenCursor.name})
-        OR
-        (${mimeTypeSortExpression} = ${pageTokenCursorMimeTypeSortValue} AND ${items.name} = ${pageTokenCursor.name} AND ${items.id} > ${pageTokenCursor.id})
+      const cursorCondition = sql`
+          (${mimeTypeSortExpression}, ${items.name}, ${items.id})
+          > (
+          ${pageTokenCursorMimeTypeSortValue}
+          ,
+          ${pageTokenCursor.name}
+          ,
+          ${pageTokenCursor.id}
+          )
       `
+      conditions.push(cursorCondition)
     }
-
-    const finalWhereClause = and(baseWhereClause, cursorCondition)
+    const finalWhereClause = and(...conditions)
 
     const fetchedItems: InferSelectModel<typeof items>[] = await db
       .select()
       .from(items)
       .where(finalWhereClause)
-      .orderBy(asc(mimeTypeSortExpression), asc(items.name), asc(items.id))
+      .orderBy(
+        sql`CASE WHEN
+            ${items.mimeType}
+            =
+            ${FOLDER_MIME_TYPE}
+            THEN
+            0
+            ELSE
+            1
+            END`,
+        asc(items.name),
+        asc(items.id)
+      )
       .limit(pageSize + 1)
 
     const hasNextPage = fetchedItems.length > pageSize

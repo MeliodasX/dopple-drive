@@ -4,7 +4,8 @@ import { ReactNode, useState } from 'react'
 
 export enum QueryKeys {
   ITEMS = 'items',
-  BREADCRUMB = 'breadcrumb'
+  BREADCRUMB = 'breadcrumb',
+  SEARCH = 'search'
 }
 
 export enum QueryType {
