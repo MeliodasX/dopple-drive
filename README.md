@@ -92,6 +92,11 @@ This project was built with scalability and performance as top priorities.
 * **Folder Uploads:** The UI currently does not support uploading entire folders via drag-and-drop; users must select
   the files within the folder.
 * **Sharing:** File and folder sharing functionality is not yet implemented.
+* **Folder Uploads:** The UI currently does not support uploading entire folders via drag-and-drop; users must select
+  the files within the folder.
+* **No Bulk Operations:** The application does not currently support bulk actions like moving or deleting multiple items
+  at once. Each operation must be performed individually. The only exception is the ability to upload multiple files
+  simultaneously.
 * **Trash/Restore:** While items are soft-deleted on the backend, the UI for a "Trash" can and restoring items has not
   been built.
 
