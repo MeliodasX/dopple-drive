@@ -7,6 +7,10 @@ export enum QueryKeys {
   BREADCRUMB = 'breadcrumb'
 }
 
+export enum QueryType {
+  SINGLE = 'single'
+}
+
 export default function QueryProvider({ children }: { children: ReactNode }) {
   const [queryClient] = useState(
     () =>

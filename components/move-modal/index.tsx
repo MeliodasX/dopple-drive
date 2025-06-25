@@ -25,7 +25,7 @@ import { cn } from '@/lib/utils'
 import { toast } from '@/lib/toast'
 import { FOLDER_MIME_TYPE } from '@/utils/constants'
 import { Item, MoveItem } from '@/types/item-types'
-import { QueryKeys } from '@/query/QueryProvider'
+import { QueryKeys, QueryType } from '@/query/QueryProvider'
 import { useDoppleStore } from '@/providers/dopple-store-provider'
 import {
   createFolder,
@@ -61,7 +61,7 @@ const FolderChildren = ({
   onSelect: (folder: Item) => void
 }) => {
   const { data: response, isLoading } = useQuery({
-    queryKey: [QueryKeys.ITEMS, parentFolderId],
+    queryKey: [QueryKeys.ITEMS, QueryType.SINGLE, parentFolderId],
     queryFn: () => getResourceById(parentFolderId),
     staleTime: 5 * 60 * 1000
   })
@@ -218,6 +218,9 @@ export function MoveModal({ isOpen, onClose, itemToMove }: MoveModalProps) {
       toast.success(`Folder "${newFolderName}" created`)
       queryClient.invalidateQueries({
         queryKey: [QueryKeys.ITEMS, variables.parentId]
+      })
+      queryClient.invalidateQueries({
+        queryKey: [QueryKeys.ITEMS, QueryType.SINGLE, variables.parentId]
       })
       queryClient.invalidateQueries({
         queryKey: [QueryKeys.BREADCRUMB, variables.parentId]

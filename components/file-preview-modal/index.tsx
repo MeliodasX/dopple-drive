@@ -13,7 +13,7 @@ import {
 
 import { Button } from '@/components/ui/button'
 import { isSingleItemFileResponse } from '@/types/type-guards'
-import { QueryKeys } from '@/query/QueryProvider'
+import { QueryKeys, QueryType } from '@/query/QueryProvider'
 import { SingleItemFileResponse } from '@/types/item-types'
 import { getResourceById } from '@/requests/items'
 import { downloadFile } from '@/services/download-service'
@@ -151,7 +151,7 @@ export const FilePreviewModal = ({
   fileId
 }: FilePreviewModalProps) => {
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: [QueryKeys.ITEMS, fileId],
+    queryKey: [QueryKeys.ITEMS, QueryType.SINGLE, fileId],
     queryFn: () => getResourceById(fileId ?? -1),
     enabled: !!fileId && isOpen,
     staleTime: 60 * 60 * 1000
