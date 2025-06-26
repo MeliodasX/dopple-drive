@@ -22,6 +22,7 @@ import {
   CardHeader,
   CardTitle
 } from '@/components/ui/card'
+import { SignInButton } from '@clerk/nextjs'
 
 export default async function Home() {
   const { userId } = await auth()
@@ -82,7 +83,7 @@ export default async function Home() {
     },
     {
       name: 'Pro',
-      price: '$9.99/mo',
+      price: '$9.99',
       description: 'For professionals and small teams',
       features: [
         '100GB Storage',
@@ -130,16 +131,17 @@ export default async function Home() {
               built for the modern world. Fast, secure, and beautifully simple.
             </p>
             <div className="mb-12 flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Button
-                asChild
-                size="lg"
-                className="bg-blue-600 px-8 py-3 text-lg text-white hover:bg-blue-500"
-              >
-                <Link href="/app">
-                  Start for Free
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-              </Button>
+              <SignInButton>
+                <Button
+                  asChild
+                  size="lg"
+                  className="bg-blue-600 px-8 py-3 text-lg text-white hover:bg-blue-500"
+                >
+                  <Link href="/">
+                    Start for Free <ArrowRight className="ml-2 h-5 w-5" />
+                  </Link>
+                </Button>
+              </SignInButton>
               <Button
                 variant="outline"
                 size="lg"
@@ -249,26 +251,35 @@ export default async function Home() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ul className="mb-6 space-y-3">
-                    {plan.features.map((feature, featureIndex) => (
-                      <li
-                        key={featureIndex}
-                        className="flex items-center gap-3"
+                  <div className="flex h-[280px] flex-col justify-between">
+                    <ul className="mb-6 space-y-3">
+                      {plan.features.map((feature, featureIndex) => (
+                        <li
+                          key={featureIndex}
+                          className="flex items-center gap-3"
+                        >
+                          <Check className="h-4 w-4 flex-shrink-0 text-blue-400" />
+                          <span className="text-slate-300">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <SignInButton>
+                      <Button
+                        className={`w-full ${
+                          plan.popular
+                            ? 'bg-blue-600 text-white hover:bg-blue-500'
+                            : 'bg-slate-800 text-slate-100 hover:bg-slate-700'
+                        }`}
                       >
-                        <Check className="h-4 w-4 flex-shrink-0 text-blue-400" />
-                        <span className="text-slate-300">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Button
-                    className={`w-full ${
-                      plan.popular
-                        ? 'bg-blue-600 text-white hover:bg-blue-500'
-                        : 'bg-slate-800 text-slate-100 hover:bg-slate-700'
-                    }`}
-                  >
-                    {plan.price === 'Custom' ? 'Contact Sales' : 'Get Started'}
-                  </Button>
+                        <Link href="/">
+                          {' '}
+                          {plan.price === 'Custom'
+                            ? 'Contact Sales'
+                            : 'Get Started'}
+                        </Link>
+                      </Button>
+                    </SignInButton>
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -286,23 +297,27 @@ export default async function Home() {
               important files.
             </p>
             <div className="flex flex-col justify-center gap-4 sm:flex-row">
-              <Button
-                asChild
-                size="lg"
-                className="bg-blue-600 px-8 py-3 text-lg text-white hover:bg-blue-500"
-              >
-                <Link href="/app">
-                  Start Free Trial
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-              </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                className="border-slate-700 px-8 py-3 text-lg text-slate-300 hover:bg-slate-800 hover:text-slate-100"
-              >
-                Contact Sales
-              </Button>
+              <SignInButton>
+                <Button
+                  asChild
+                  size="lg"
+                  className="bg-blue-600 px-8 py-3 text-lg text-white hover:bg-blue-500"
+                >
+                  <Link href="/">
+                    Start Free Trial
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Link>
+                </Button>
+              </SignInButton>
+              <SignInButton>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="border-slate-700 px-8 py-3 text-lg text-slate-300 hover:bg-slate-800 hover:text-slate-100"
+                >
+                  Contact Sales
+                </Button>
+              </SignInButton>
             </div>
           </div>
         </div>

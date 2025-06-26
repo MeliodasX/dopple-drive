@@ -52,7 +52,7 @@ const performUpload = (uploadItem: UploadQueueItem) => {
             {
               id: toastId,
               className:
-                'w-[400px] py-2 px-4 border-slate-600/50 bg-slate-800/90 backdrop-blur-sm'
+                'w-[400px] py-2 px-4 rounded-lg border-slate-600/50 bg-slate-800/90 backdrop-blur-sm'
             }
           )
         }
