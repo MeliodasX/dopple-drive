@@ -44,16 +44,15 @@ import { DriveBreadcrumb } from '@/components/bread-crumb'
 import { getCategoryFromMimeType } from '@/utils/get-category-from-mime-type'
 import { FilePreviewModal } from '@/components/file-preview-modal'
 import { Item } from '@/types/item-types'
-import { startDownloadForItem } from '../../services/download-manager'
-import { RenameModal } from '@/components/rename-model'
+import { startDownloadForItem } from '@/services/download-manager'
+import { RenameModal } from '@/components/rename-modal'
 import { SimpleDeleteDialog } from '@/components/delete-dialog'
 import { MoveModal } from '@/components/move-modal'
 import { QueryKeys } from '@/query/QueryProvider'
 
 export default function Home() {
-  const { currentDirectoryId, setCurrentDirectoryId } = useDoppleStore(
-    (state) => state
-  )
+  const { currentDirectoryId, setCurrentDirectoryId, setDisableDropzone } =
+    useDoppleStore((state) => state)
   const [selectedItem, setSelectedItem] = useState<Item | null>(null)
   const [openFilePreviewModal, setOpenFilePreviewModal] =
     useState<boolean>(false)
@@ -83,6 +82,7 @@ export default function Home() {
   const handleFileClick = (item: Item) => {
     setSelectedItem(item)
     setOpenFilePreviewModal(true)
+    setDisableDropzone(true)
   }
 
   const handleItemClick = (item: Item) => {
@@ -93,16 +93,19 @@ export default function Home() {
   const handleRenameClick = (item: Item) => {
     setSelectedItem(item)
     setOpenRenameModal(true)
+    setDisableDropzone(true)
   }
 
   const handleDeleteClick = (item: Item) => {
     setSelectedItem(item)
     setOpenDeleteModal(true)
+    setDisableDropzone(true)
   }
 
   const handleMoveClick = (item: Item) => {
     setSelectedItem(item)
     setOpenMoveModal(true)
+    setDisableDropzone(true)
   }
 
   const getFileIcon = (type: string) => {
@@ -154,22 +157,34 @@ export default function Home() {
       <DriveBreadcrumb />
       <FilePreviewModal
         isOpen={openFilePreviewModal}
-        onClose={() => setOpenFilePreviewModal(false)}
+        onClose={() => {
+          setDisableDropzone(false)
+          setOpenFilePreviewModal(false)
+        }}
         fileId={selectedItem?.id ?? null}
       />
       <RenameModal
         isOpen={openRenameModal}
-        onClose={() => setOpenRenameModal(false)}
+        onClose={() => {
+          setDisableDropzone(false)
+          setOpenRenameModal(false)
+        }}
         item={selectedItem}
       />
       <MoveModal
         isOpen={openMoveModal}
-        onClose={() => setOpenMoveModal(false)}
+        onClose={() => {
+          setDisableDropzone(false)
+          setOpenMoveModal(false)
+        }}
         itemToMove={selectedItem}
       />
       <SimpleDeleteDialog
         isOpen={openDeleteModal}
-        onClose={() => setOpenDeleteModal(false)}
+        onClose={() => {
+          setDisableDropzone(false)
+          setOpenDeleteModal(false)
+        }}
         item={selectedItem}
       />
       {status === 'pending' ? (

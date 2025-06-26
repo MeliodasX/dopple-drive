@@ -5,8 +5,10 @@ import { FolderPlus, Plus, Upload } from 'lucide-react'
 import { useState } from 'react'
 import { CreateFolderModal } from '@/components/create-folder-modal'
 import { FileUploadModal } from '@/components/file-upload-modal'
+import { useDoppleStore } from '@/providers/dopple-store-provider'
 
 export const FloatingButton = () => {
+  const { setDisableDropzone } = useDoppleStore((state) => state)
   const [menuOpen, setMenuOpen] = useState(false)
   const [createFolderOpen, setCreateFolderOpen] = useState(false)
   const [createFileOpen, setCreateFileOpen] = useState(false)
@@ -14,11 +16,13 @@ export const FloatingButton = () => {
   const onCreateFolderModalClose = () => {
     setCreateFolderOpen(false)
     setMenuOpen(false)
+    setDisableDropzone(false)
   }
 
   const onCreateFileModalClose = () => {
     setCreateFileOpen(false)
     setMenuOpen(false)
+    setDisableDropzone(false)
   }
 
   return (
@@ -44,7 +48,10 @@ export const FloatingButton = () => {
               Create Folder
             </span>
             <Button
-              onClick={() => setCreateFolderOpen(true)}
+              onClick={() => {
+                setDisableDropzone(true)
+                setCreateFolderOpen(true)
+              }}
               className="h-12 w-12 flex-shrink-0 rounded-full border border-slate-600 bg-slate-700 text-slate-100 shadow-lg transition-all duration-200 hover:scale-105 hover:bg-slate-600"
               disabled={createFolderOpen || createFileOpen}
             >
@@ -56,7 +63,10 @@ export const FloatingButton = () => {
               File Upload
             </span>
             <Button
-              onClick={() => setCreateFileOpen(true)}
+              onClick={() => {
+                setDisableDropzone(true)
+                setCreateFileOpen(true)
+              }}
               disabled={createFolderOpen || createFileOpen}
               className="h-12 w-12 flex-shrink-0 rounded-full bg-blue-600 text-white shadow-lg transition-all duration-200 hover:scale-105 hover:bg-blue-500"
             >

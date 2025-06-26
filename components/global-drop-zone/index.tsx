@@ -23,13 +23,16 @@ const Portal: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 export function GlobalDropzone() {
   const [isDragging, setIsDragging] = useState(false)
   const queryClient = useQueryClient()
-  const { currentDirectoryId } = useDoppleStore((state) => state)
+  const { disableDropzone, currentDirectoryId } = useDoppleStore(
+    (state) => state
+  )
 
   const dragCounter = React.useRef(0)
 
   const handleDragEnter = (e: DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
+    if (disableDropzone) return
     dragCounter.current++
     if (e?.dataTransfer?.items && e.dataTransfer.items.length > 0) {
       setIsDragging(true)
@@ -39,6 +42,7 @@ export function GlobalDropzone() {
   const handleDragLeave = (e: DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
+    if (disableDropzone) return
     dragCounter.current--
     if (dragCounter.current === 0) {
       setIsDragging(false)
@@ -48,11 +52,16 @@ export function GlobalDropzone() {
   const handleDragOver = (e: DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
+
+    if (disableDropzone) return
   }
 
   const handleDrop = (e: DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
+
+    if (disableDropzone) return
+
     setIsDragging(false)
     dragCounter.current = 0
 
@@ -95,9 +104,9 @@ export function GlobalDropzone() {
       window.removeEventListener('dragover', handleDragOver)
       window.removeEventListener('drop', handleDrop)
     }
-  }, [currentDirectoryId])
+  }, [disableDropzone, currentDirectoryId])
 
-  if (!isDragging) {
+  if (!isDragging || disableDropzone) {
     return null
   }
 
