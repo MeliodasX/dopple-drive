@@ -1,7 +1,8 @@
-import { SignedOut, SignInButton, SignUpButton } from '@clerk/nextjs'
+import { SignedOut, SignInButton } from '@clerk/nextjs'
 import { auth } from '@clerk/nextjs/server'
 import Link from 'next/link'
 import { DoppleLogo } from '@/components/dopple-logo'
+import { Button } from '@/components/ui/button'
 
 export const BasicHeader = async () => {
   const { userId } = await auth()
@@ -15,8 +16,15 @@ export const BasicHeader = async () => {
               <DoppleLogo />
               <div className="flex h-16 items-center justify-end gap-4 p-4">
                 <SignedOut>
-                  <SignInButton />
-                  <SignUpButton />
+                  <SignInButton>
+                    <Button
+                      asChild
+                      size="lg"
+                      className="bg-blue-600 px-8 py-3 text-lg text-white hover:bg-blue-500"
+                    >
+                      <Link href="/">Get Started</Link>
+                    </Button>
+                  </SignInButton>
                 </SignedOut>
               </div>
             </div>
