@@ -11,7 +11,6 @@ import { EmptyState } from '@/components/empty-state'
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow
@@ -27,15 +26,8 @@ import { Button } from '@/components/ui/button'
 import {
   ArrowRightIcon,
   Download,
-  FileIcon,
   FilePenLineIcon,
-  FileSpreadsheetIcon,
-  FileTextIcon,
-  FilmIcon,
-  FolderIcon,
-  ImageIcon,
   MoreVertical,
-  MusicIcon,
   Trash2
 } from 'lucide-react'
 import { formatGoogleDriveDate } from '@/utils/format-google-drive-date'
@@ -49,10 +41,16 @@ import { RenameModal } from '@/components/rename-modal'
 import { SimpleDeleteDialog } from '@/components/delete-dialog'
 import { MoveModal } from '@/components/move-modal'
 import { QueryKeys } from '@/query/QueryProvider'
+import { DriveTableRow } from '@/components/drive-table-row'
+import { getFileIconForDriveTable } from '@/utils/get-file-icon-for-drive-table'
 
 export default function Home() {
-  const { currentDirectoryId, setCurrentDirectoryId, setDisableDropzone } =
-    useDoppleStore((state) => state)
+  const {
+    currentDirectoryId,
+    setCurrentDirectoryId,
+    setDisableDropzone,
+    setSelectedItemId
+  } = useDoppleStore((state) => state)
   const [selectedItem, setSelectedItem] = useState<Item | null>(null)
   const [openFilePreviewModal, setOpenFilePreviewModal] =
     useState<boolean>(false)
@@ -77,6 +75,7 @@ export default function Home() {
 
   const handleFolderClick = (item: Item) => {
     setCurrentDirectoryId(item.id)
+    setSelectedItemId(null)
   }
 
   const handleFileClick = (item: Item) => {
@@ -106,27 +105,6 @@ export default function Home() {
     setSelectedItem(item)
     setOpenMoveModal(true)
     setDisableDropzone(true)
-  }
-
-  const getFileIcon = (type: string) => {
-    switch (type) {
-      case 'folder':
-        return <FolderIcon className="h-5 w-5 text-blue-400" />
-      case 'image':
-        return <ImageIcon className="h-5 w-5 text-green-400" />
-      case 'audio':
-        return <MusicIcon className="h-5 w-5 text-green-400" />
-      case 'document':
-        return <FileTextIcon className="h-5 w-5 text-blue-300" />
-      case 'spreadsheet':
-        return <FileSpreadsheetIcon className="h-5 w-5 text-green-500" />
-      case 'video':
-        return <FilmIcon className="h-5 w-5 text-purple-400" />
-      case 'presentation':
-        return <FileIcon className="h-5 w-5 text-orange-400" />
-      default:
-        return <FileIcon className="h-5 w-5 text-slate-400" />
-    }
   }
 
   const sortedItems = useMemo(() => {
@@ -220,77 +198,14 @@ export default function Home() {
                 </TableHeader>
                 <TableBody>
                   {sortedItems.map((item) => (
-                    <TableRow
+                    <DriveTableRow
                       key={item.id}
-                      onDoubleClick={() => {
-                        handleItemClick(item)
-                      }}
-                      className="group cursor-pointer border-slate-800 hover:bg-slate-800/30"
-                    >
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-3">
-                          {getFileIcon(getCategoryFromMimeType(item.mimeType))}
-                          <span className="text-slate-100 transition-colors group-hover:text-blue-400">
-                            {item.name}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-slate-400">
-                        {formatGoogleDriveDate(item.updatedAt)}
-                      </TableCell>
-                      <TableCell className="text-slate-400">
-                        {item.mimeType !== FOLDER_MIME_TYPE
-                          ? formatGoogleDriveFileSize(item.size)
-                          : '—'}
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-slate-400 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-slate-700 hover:text-slate-100"
-                            >
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent
-                            align="end"
-                            className="border-slate-700 bg-slate-800"
-                          >
-                            {item.mimeType !== FOLDER_MIME_TYPE && (
-                              <DropdownMenuItem
-                                onClick={() => startDownloadForItem(item)}
-                                className="text-slate-100 focus:bg-slate-700"
-                              >
-                                <Download className="mr-2 h-4 w-4" /> Download
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem
-                              onClick={() => handleRenameClick(item)}
-                              className="text-slate-100 focus:bg-slate-700"
-                            >
-                              <FilePenLineIcon className="mr-2 h-4 w-4" />{' '}
-                              Rename
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="text-slate-100 hover:bg-slate-700"
-                              onClick={() => handleMoveClick(item)}
-                            >
-                              <ArrowRightIcon className="mr-2 h-4 w-4" />
-                              Move
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator className="bg-slate-700" />
-                            <DropdownMenuItem
-                              onClick={() => handleDeleteClick(item)}
-                              className="text-red-400 focus:bg-red-900/50 focus:text-red-400"
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" /> Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
+                      item={item}
+                      onDoubleClick={handleItemClick}
+                      onRename={handleRenameClick}
+                      onDelete={handleDeleteClick}
+                      onMove={handleMoveClick}
+                    />
                   ))}
                 </TableBody>
               </Table>
@@ -308,7 +223,9 @@ export default function Home() {
               >
                 <div className="flex items-start justify-between">
                   <div className="flex min-w-0 flex-1 items-center gap-3">
-                    {getFileIcon(getCategoryFromMimeType(item.mimeType))}
+                    {getFileIconForDriveTable(
+                      getCategoryFromMimeType(item.mimeType)
+                    )}
                     <div className="min-w-0 flex-1">
                       <h3 className="truncate font-medium text-slate-100">
                         {item.name}
